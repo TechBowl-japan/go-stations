@@ -1,0 +1,151 @@
+openapi: 3.1.0
+
+info:
+  title: TODO Application
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /healthz:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /todos:
+    get:
+      summary: List TODOs
+      parameters:
+        - name: prev_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            default: 5
+      responses:
+        '200':
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  todos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/todo'
+    post:
+      summary: Create TODO
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  required: true
+                description:
+                  type: string
+                  required: false
+      responses:
+        '200':
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  todo:
+                    $ref: '#/components/schemas/todo'
+        '400':
+          description: 400 response
+    put:
+      summary: Update TODO
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  required: true
+                subject:
+                  type: string
+                  required: true
+                description:
+                  type: string
+                  required: false
+      responses:
+        '200':
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  todo:
+                    $ref: '#/components/schemas/todo'
+        '400':
+          description: 400 response
+        '404':
+          description: 404 response
+    delete:
+      summary: Delete TODO
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  required: true
+      responses:
+        '200':
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: 400 response
+        '404':
+          description: 404 response
+
+components:
+  schemas:
+    todo:
+      type: object
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updateed_at:
+          type: string
+          format: date-time
