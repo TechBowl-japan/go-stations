@@ -86,6 +86,10 @@ func TestStation18(t *testing.T) {
 			IDs:       []int64{2, 3},
 			WantError: nil,
 		},
+		"Empty IDs": {
+			IDs:       []int64{},
+			WantError: nil,
+		},
 	}
 
 	for name, tc := range testcases {
