@@ -14,3 +14,6 @@
 # local database file
 .sqlite3/*
 !.sqlite3/.gitkeep
+
+node_modules
+.DS_Store
