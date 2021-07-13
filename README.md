@@ -8,8 +8,8 @@ Railway では Git で自分が取り組んだ内容を記録するときに、�
 
 |言語、フレームワークなど|バージョン|
 |:---:|:---:|
-Go| * [TODO] @osamingoバージョン情報の追加
-SQLite| 3.*
+Go| 1.16.* or higher
+SQLite| 3.35.* or higher
 
 ## 初期設定
 
@@ -54,8 +54,8 @@ git clone git@github.com:[GitHubのユーザー名]/go-stations.git
 
 #### Goのインストール
 
-Windows編 [TODO] @osamingo
-Mac編 [TODO] @osamingo
+Windows編: https://golang.org/doc/install
+Mac編: https://golang.org/doc/install
 
 #### パッケージのインストール
 
@@ -67,8 +67,8 @@ cd go-stations
 ```
 
 ```powershell
--- ここにGoの情報を入れます [TODO] @osamingo Goで実行するコマンドを入れて欲しいです。
-yarn install // ←こちらを実行した後に「TechTrainにログインします。GitHubでサインアップした方はお手数ですが、パスワードリセットよりパスワードを発行してください」と出てくるため、ログインを実行してください。出てこない場合は、コマンドの実行に失敗している可能性があるため、TechTrainの問い合わせかRailwayのSlackより問い合わせをお願いいたします。
+go mod download // ←データベースのドライバーとテスト用のライブラリをダウンロードします。
+yarn install    // ←こちらを実行した後に「TechTrainにログインします。GitHubでサインアップした方はお手数ですが、パスワードリセットよりパスワードを発行してください」と出てくるため、ログインを実行してください。出てこない場合は、コマンドの実行に失敗している可能性があるため、TechTrainの問い合わせかRailwayのSlackより問い合わせをお願いいたします。
 ```
 
 上記のコマンドを実行すると、techtrainにログインするように表示が行われます。
@@ -89,22 +89,26 @@ Rails Railway に取り組み始めてください。
 
 ## トラブルシューティング
 
-### DBに接続して中身が見れないなのですが？
+### DBに接続して中身が見れないのですが？
 
 
 次のような結果が返ってきていれば、正常です。
 
 ```
-[TODO] @osamingo
+$ sqlite3 .sqlite3/todo.db
+SQLite version 3.32.3 2020-06-18 14:16:19
+Enter ".help" for usage hints.
+sqlite> .tables
+todos
 ```
 
-もし、 `database名が入る　[TODO] @osamingo` が作成されていないようであれば、次のコマンドを実行しましょう。
+もし、 `todos` が作成されていないようであれば、次のコマンドを実行しましょう。
 
 ```
-[TODO] @osamingo
+$ sqlite3 .sqlite3/todo.db < db/schema.sql
 ```
 
-これで、 `database名が入る　[TODO] @osamingo` が作成されていれば、問題なく接続できます。
+これで、 `todos` が作成されていれば、問題なく接続できます。
 
 ### commitしたのにチェックが実行されていないようなのですが？
 
@@ -120,8 +124,6 @@ Rails Railway に取り組み始めてください。
 
 際にうまくいかないことが多いということが報告されています。
 もし上記のようなことが起こった場合には、Terminalなどの画面でSSHによるクローンを試していただき、その上で `yarn install` を実行していただくことで解決することが多いです。もし解決しなかった場合には、運営までお問い合わせいただくか、RailwayのSlackワークスペースにてご質問ください。
-
-### [TODO] @osamingo Goでよく起きるトラブルシューティングがあれば。
 
 ## 自分のリポジトリの状態を最新の TechBowl-japan/go-stations と合わせる
 
