@@ -5,6 +5,7 @@
   "tests": [
     {
       "type": "go-test",
+      "module": true,
       "path": "./_test/sta1"
     }
   ]
