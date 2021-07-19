@@ -1,0 +1,23 @@
+{
+  "name": "go-stations",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "repository": "https://github.com/TechBowl-japan/go-stations.git",
+  "author": "Hikaru Terazono (3c1u) <3c1u@tohkani.com>",
+  "dependencies": {
+    "@techtrain/cli-railway": "0.1.2"
+  },
+  "devDependencies": {
+    "simple-git-hooks": "^2.5.1"
+  },
+  "scripts": {
+    "login:techtrain": "techtrain-railway login",
+    "hook:pre-commit": "techtrain-railway hook:pre-commit",
+    "hook:update": "simple-git-hooks",
+    "postinstall": "yarn hook:update && yarn login:techtrain"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "yarn hook:pre-commit"
+  }
+}
