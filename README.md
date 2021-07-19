@@ -145,7 +145,7 @@ git fetch upstream
 ```shell
 git branch -a ←このコマンドを実行
 
-* master
+* main
   remotes/origin/HEAD -> origin/main
   remotes/origin/main
   remotes/upstream/main ←こちらのような upstream という文字が含まれた表示の行があれば成功です。
