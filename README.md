@@ -76,7 +76,7 @@ GitHubでサインアップしており、パスワードがない方がいま�
 
 ログインが完了すれば、ひとまず事前準備はおしまいです。お疲れ様でした。
 TechTrainの画面からチャレンジを始めることもお忘れなく！
-Rails Railway に取り組み始めてください。
+Go Railway に取り組み始めてください。
 
 ## DB(SQLite)と接続をしたいという方へ
 
@@ -134,7 +134,7 @@ Stationの問題やエラーの修正などがなされておらず、自分で�
 ### 準備
 
 ```shell
-# こちらは、自分でクローンした[GitHubユーザー名]/rails-stationsの作業ディレクトリを前提としてコマンドを用意しています。
+# こちらは、自分でクローンした[GitHubユーザー名]/go-stationsの作業ディレクトリを前提としてコマンドを用意しています。
 # 自分が何か変更した内容があれば、 stash した後に実行してください。
 git remote add upstream git@github.com:TechBowl-japan/go-stations.git
 git fetch upstream
