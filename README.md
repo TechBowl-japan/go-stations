@@ -37,7 +37,7 @@ Node.js, Yarnのインストールがまだの場合は[html-staions](https://gi
 作成したリポジトリを作業するディレクトリにクローンしましょう。
 
 * Macなら Terminal.app(iTerm2などでも良い)
-* Windowsなら PowerShell(GitBashなどのインストールしたアプリでもう良いです。アプリによってはコマンドが異なることがあります)
+* Windowsなら PowerShell(GitBashなどのインストールしたアプリでも良いです。アプリによってはコマンドが異なることがあります)
 
 で作業するディレクトリを開き、次のコマンドでForkしたGo Railwayのリポジトリをローカルにクローンしてください。
 
