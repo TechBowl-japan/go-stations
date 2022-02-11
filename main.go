@@ -49,8 +49,14 @@ func realMain() error {
 
 	// set http handlers
 	mux := http.NewServeMux()
+	echoHandler := func(w http.ResponseWriter, req *http.Request) {
+		// io.WriteString(w, "Hello, world!\n")
+		w.WriteHeader(404)
+		w.Write([]byte("こんにちは"))
+	}
 
-	// TODO: ここから実装を行う
+	mux.Handle("/", http.HandlerFunc(echoHandler))
+	http.ListenAndServe(defaultPort, mux)
 
 	return nil
 }
