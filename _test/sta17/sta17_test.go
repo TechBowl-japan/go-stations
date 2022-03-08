@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/TechBowl-japan/go-stations/model"
+	"github.com/osamingo/go-todo-app/model"
 )
 
 func TestStation17(t *testing.T) {
@@ -38,6 +38,7 @@ func TestStation17(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
+		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
