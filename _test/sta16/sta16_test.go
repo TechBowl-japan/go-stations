@@ -4,74 +4,61 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"os/exec"
-	"syscall"
 	"testing"
-	"time"
 
-	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/osamingo/go-todo-app/db"
+	"github.com/osamingo/go-todo-app/handler/router"
 )
 
 func TestStation16(t *testing.T) {
 	dbPath := "./temp_test.db"
 	if err := os.Setenv("DB_PATH", dbPath); err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("dbPathのセットに失敗しました。%v", err)
 		return
 	}
 
-	d, err := db.NewDB(dbPath)
+	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("データベースの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
-		if err := d.Close(); err != nil {
-			t.Error(" エラーが発生しました", err)
+		if err := todoDB.Close(); err != nil {
+			t.Errorf("データベースのクローズに失敗しました: %v", err)
 			return
 		}
-	})
-	t.Cleanup(func() {
 		if err := os.Remove(dbPath); err != nil {
-			t.Error(" エラーが発生しました", err)
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
 			return
 		}
 	})
 
-	stmt, err := d.Prepare(`INSERT INTO todos(subject) VALUES(?)`)
+	stmt, err := todoDB.Prepare(`INSERT INTO todos(subject) VALUES(?)`)
 	if err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("ステートメントの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := stmt.Close(); err != nil {
-			t.Error(" エラーが発生しました", err)
+			t.Errorf("ステートメントのクローズに失敗しました: %v", err)
 			return
 		}
 	})
 
 	for i := 0; i < 3; i++ {
-		_, err = stmt.Exec(fmt.Sprintf("todo subject %d", i+1))
-		if err != nil {
-			t.Error(" エラーが発生しました", err)
+		if _, err := stmt.Exec(fmt.Sprintf("todo subject %d", i+1)); err != nil {
+			t.Errorf("todoの追加に失敗しました: %v", err)
 			return
 		}
 	}
 
-	stop, err := procStart(t)
-	if err != nil {
-		t.Error(" エラーが発生しました", err)
-		return
-	}
-
-	t.Cleanup(func() {
-		if err := stop(); err != nil {
-			t.Error(" エラーが発生しました", err)
-			return
-		}
-	})
+	r := router.NewRouter(todoDB)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
 
 	testcases := map[string]struct {
 		PrevID   int
@@ -116,7 +103,6 @@ func TestStation16(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			var q string
 			if tc.PrevID != 0 && tc.Size != 0 {
@@ -127,9 +113,9 @@ func TestStation16(t *testing.T) {
 				q = fmt.Sprintf("?size=%d", tc.Size)
 			}
 
-			resp, err := http.Get("http://localhost:8080/todos" + q)
+			resp, err := http.Get(srv.URL + "/todos" + q)
 			if err != nil {
-				t.Error(" エラーが発生しました", err)
+				t.Errorf("リクエストに失敗しました: %v", err)
 				return
 			}
 			defer resp.Body.Close()
@@ -139,7 +125,7 @@ func TestStation16(t *testing.T) {
 			}
 			err = json.NewDecoder(resp.Body).Decode(&body)
 			if err != nil {
-				t.Error(" エラーが発生しました", err)
+				t.Error("jsonのデコードに失敗しました", err)
 				return
 			}
 
@@ -154,27 +140,4 @@ func TestStation16(t *testing.T) {
 			}
 		})
 	}
-}
-
-func procStart(t *testing.T) (func() error, error) {
-	t.Helper()
-
-	cmd := exec.Command("go", "run", "../../main.go")
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	time.Sleep(2 * time.Second)
-
-	stop := func() error {
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	}
-
-	return stop, nil
 }
