@@ -39,24 +39,23 @@ func TestStation8(t *testing.T) {
 	dbpath := "./temp_test.db"
 	d, err := db.NewDB(dbpath)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Error("DBの作成に失敗しました。", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := d.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Error("DBのクローズに失敗しました。", err)
 			return
 		}
-	})
-	t.Cleanup(func() {
 		if err := os.Remove(dbpath); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Error("dbPathnの削除に失敗しました。", err)
 			return
 		}
 	})
 
 	for name, tc := range testcases {
+		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
