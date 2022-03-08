@@ -12,8 +12,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/osamingo/go-todo-app/db"
-	"github.com/osamingo/go-todo-app/handler/router"
+
+	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/handler/router"
 )
 
 func TestStation9(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/osamingo/go-todo-app/db"
-	"github.com/osamingo/go-todo-app/model"
-	"github.com/osamingo/go-todo-app/service"
+	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/model"
+	"github.com/TechBowl-japan/go-stations/service"
 )
 
 func TestStation15(t *testing.T) {

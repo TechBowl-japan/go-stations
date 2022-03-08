@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/osamingo/go-todo-app/db"
-	"github.com/osamingo/go-todo-app/model"
-	"github.com/osamingo/go-todo-app/service"
+	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/model"
+	"github.com/TechBowl-japan/go-stations/service"
 )
 
 func TestStation18(t *testing.T) {

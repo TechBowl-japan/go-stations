@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/osamingo/go-todo-app/model"
+	"github.com/TechBowl-japan/go-stations/model"
 )
 
 func TestStation17(t *testing.T) {
