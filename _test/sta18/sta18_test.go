@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/TechBowl-japan/go-stations/db"
-	"github.com/TechBowl-japan/go-stations/model"
-	"github.com/TechBowl-japan/go-stations/service"
+	"github.com/osamingo/go-todo-app/db"
+	"github.com/osamingo/go-todo-app/model"
+	"github.com/osamingo/go-todo-app/service"
 )
 
 func TestStation18(t *testing.T) {
@@ -29,43 +29,40 @@ func TestStation18(t *testing.T) {
 		},
 	}
 
-	dbpath := "./temp_test.db"
-	d, err := db.NewDB(dbpath)
+	dbPath := "./temp_test.db"
+	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("データベースの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
-		if err := d.Close(); err != nil {
-			t.Error(" エラーが発生しました", err)
+		if err := todoDB.Close(); err != nil {
+			t.Errorf("データベースのクローズに失敗しました: %v", err)
 			return
 		}
-	})
-	t.Cleanup(func() {
-		if err := os.Remove(dbpath); err != nil {
-			t.Error(" エラーが発生しました", err)
+		if err := os.Remove(dbPath); err != nil {
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
 			return
 		}
 	})
 
-	stmt, err := d.Prepare(`INSERT INTO todos(subject, description) VALUES(?, ?)`)
+	stmt, err := todoDB.Prepare(`INSERT INTO todos(subject, description) VALUES(?, ?)`)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("データベースのステートメントの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := stmt.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Errorf("データベースのステートメントのクローズに失敗しました: %v", err)
 			return
 		}
 	})
 
 	for _, todo := range []*model.TODO{todos[2], todos[1], todos[0]} {
-		_, err = stmt.Exec(todo.Subject, todo.Description)
-		if err != nil {
-			t.Error("エラーが発生しました", err)
+		if _, err = stmt.Exec(todo.Subject, todo.Description); err != nil {
+			t.Errorf("データベースのステートメントの実行に失敗しました: %v", err)
 			return
 		}
 	}
@@ -86,23 +83,20 @@ func TestStation18(t *testing.T) {
 			IDs:       []int64{2, 3},
 			WantError: nil,
 		},
-		"Empty IDs": {
-			IDs:       []int64{},
-			WantError: nil,
-		},
 	}
 
 	for name, tc := range testcases {
+		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			err := service.NewTODOService(d).DeleteTODO(context.Background(), tc.IDs)
+			err := service.NewTODOService(todoDB).DeleteTODO(context.Background(), tc.IDs)
 
 			switch tc.WantError {
 			case nil:
 				if err != nil {
-					t.Error("エラーが発生しました", err)
+					t.Errorf("予期しないエラーが発生しました: %v", err)
 					return
 				}
 			default:
