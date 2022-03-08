@@ -39,6 +39,7 @@ func TestStation14(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
+		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
