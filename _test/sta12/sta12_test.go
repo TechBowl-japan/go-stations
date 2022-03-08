@@ -51,7 +51,7 @@ func TestStation12(t *testing.T) {
 
 	_, err = stmt.Exec("todo subject")
 	if err != nil {
-		t.Error(err)
+		t.Errorf("todoの追加に失敗しました: %v", err)
 		return
 	}
 
