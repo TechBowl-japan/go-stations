@@ -28,26 +28,23 @@ func TestStation12(t *testing.T) {
 
 	t.Cleanup(func() {
 		if err := d.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Errorf("データベースのクローズに失敗しました: %v", err)
 			return
 		}
-	})
-
-	t.Cleanup(func() {
 		if err := os.Remove(dbpath); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
 			return
 		}
 	})
 
 	stmt, err := d.Prepare(`INSERT INTO todos(subject) VALUES(?)`)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Errorf("ステートメントの作成に失敗しました: %v", err)
 		return
 	}
 	t.Cleanup(func() {
 		if err := stmt.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Errorf("ステートメントのクローズに失敗しました: %v", err)
 			return
 		}
 	})
@@ -83,6 +80,7 @@ func TestStation12(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
+		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			svc := service.NewTODOService(d)
@@ -90,7 +88,7 @@ func TestStation12(t *testing.T) {
 			switch tc.WantError {
 			case nil:
 				if err != nil {
-					t.Error("エラーが発生しました", err)
+					t.Errorf("予期しないエラーが発生しました: %v", err)
 					return
 				}
 			default:
