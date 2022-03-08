@@ -25,7 +25,7 @@ func TestStation9(t *testing.T) {
 
 	t.Cleanup(func() {
 		if err := os.Remove(dbPath); err != nil {
-			t.Error("dbPathnの削除に失敗しました。", err)
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
 			return
 		}
 	})

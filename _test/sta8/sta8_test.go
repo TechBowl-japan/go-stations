@@ -49,7 +49,7 @@ func TestStation8(t *testing.T) {
 			return
 		}
 		if err := os.Remove(dbpath); err != nil {
-			t.Error("dbPathnの削除に失敗しました。", err)
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
 			return
 		}
 	})
