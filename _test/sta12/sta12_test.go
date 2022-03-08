@@ -22,7 +22,7 @@ func TestStation12(t *testing.T) {
 	dbpath := "./temp_test.db"
 	d, err := db.NewDB(dbpath)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Errorf("データベースの作成に失敗しました: %v", err)
 		return
 	}
 
