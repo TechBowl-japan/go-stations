@@ -2,48 +2,49 @@ package sta2_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"os/exec"
-	"syscall"
 	"testing"
-	"time"
+
+	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/handler/router"
 )
 
 func TestStation2(t *testing.T) {
 	dbPath := "./temp_test.db"
 	if err := os.Setenv("DB_PATH", dbPath); err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Error("dbPathのセットに失敗しました。", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := os.Remove(dbPath); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Error("dbPathnの削除に失敗しました。", err)
 			return
 		}
 	})
 
-	stop, err := procStart(t)
+	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Error("DBの作成に失敗しました。", err)
 		return
 	}
-
-	t.Cleanup(func() {
-		if err := stop(); err != nil {
-			t.Error("エラーが発生しました", err)
-			return
-		}
-	})
-
-	resp, err := http.Get("http://localhost:8080")
+	r := router.NewRouter(todoDB)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/", nil)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Error("リクエストの作成に失敗しました。", err)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Error("リクエストの送信に失敗しました。", err)
 		return
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Error("レスポンスのクローズに失敗しました。", err)
 			return
 		}
 	}()
@@ -53,27 +54,4 @@ func TestStation2(t *testing.T) {
 		t.Errorf("期待していない HTTP Status Code です, got = %d, want = %d", resp.StatusCode, want)
 		return
 	}
-}
-
-func procStart(t *testing.T) (func() error, error) {
-	t.Helper()
-
-	cmd := exec.Command("go", "run", "../../main.go")
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	time.Sleep(2 * time.Second)
-
-	stop := func() error {
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	}
-
-	return stop, nil
 }
