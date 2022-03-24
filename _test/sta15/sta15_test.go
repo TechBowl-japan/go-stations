@@ -34,40 +34,37 @@ func TestStation15(t *testing.T) {
 	dbpath := "./temp_test.db"
 	d, err := db.NewDB(dbpath)
 	if err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("データベースの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := d.Close(); err != nil {
-			t.Error(" エラーが発生しました", err)
+			t.Errorf("データベースのクローズに失敗しました: %v", err)
 			return
 		}
-	})
-	t.Cleanup(func() {
 		if err := os.Remove(dbpath); err != nil {
-			t.Error(" エラーが発生しました", err)
+			t.Errorf("テスト用のデータベースの削除に失敗しました: %v", err)
 			return
 		}
 	})
 
 	stmt, err := d.Prepare(`INSERT INTO todos(subject, description) VALUES(?, ?)`)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("データベースのステートメントの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := stmt.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Errorf("データベースのステートメントのクローズに失敗しました: %v", err)
 			return
 		}
 	})
 
 	for _, todo := range []*model.TODO{todos[2], todos[1], todos[0]} {
-		_, err = stmt.Exec(todo.Subject, todo.Description)
-		if err != nil {
-			t.Error("エラーが発生しました", err)
+		if _, err := stmt.Exec(todo.Subject, todo.Description); err != nil {
+			t.Errorf("データベースのステートメントの実行に失敗しました: %v", err)
 			return
 		}
 	}
@@ -120,7 +117,7 @@ func TestStation15(t *testing.T) {
 			svc := service.NewTODOService(d)
 			ret, err := svc.ReadTODO(context.Background(), tc.PrevID, tc.Size)
 			if err != nil {
-				t.Error("エラーが発生しました", err)
+				t.Errorf("ReadTODOに失敗しました: %v", err)
 				return
 			}
 			if diff := cmp.Diff(ret, tc.TODOs, cmpopts.IgnoreFields(model.TODO{}, "CreatedAt", "UpdatedAt")); diff != "" {

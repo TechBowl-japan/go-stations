@@ -11,22 +11,22 @@ func TestStation3(t *testing.T) {
 	t.Parallel()
 
 	testcases := map[string]struct {
-		Target    interface{}
+		Target    model.HealthzResponse
 		FieldName string
-		WantKinds []reflect.Kind
+		WantKind  reflect.Kind
 	}{
 		"HealthzResponse has Message field": {
 			Target:    model.HealthzResponse{},
 			FieldName: "Message",
-			WantKinds: []reflect.Kind{reflect.String},
+			WantKind:  reflect.String,
 		},
 	}
 
 	for name, tc := range testcases {
+		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
 			tp := reflect.TypeOf(tc.Target)
 			f, ok := tp.FieldByName(tc.FieldName)
 			if !ok {
@@ -34,12 +34,10 @@ func TestStation3(t *testing.T) {
 				return
 			}
 
-			for _, k := range tc.WantKinds {
-				if f.Type.Kind() == k {
-					return
-				}
+			if f.Type.Kind() == tc.WantKind {
+				return
 			}
-			t.Errorf(tc.FieldName+" が期待している kind ではありません, got = %s, want = %s", f.Type.Kind(), tc.WantKinds)
+			t.Errorf(tc.FieldName+" が期待している kind ではありません, got = %s, want = %s", f.Type.Kind(), tc.WantKind)
 		})
 	}
 }

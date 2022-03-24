@@ -16,7 +16,7 @@ func TestStation10(t *testing.T) {
 
 	f, err := parser.ParseFile(fset, "../../model/error.go", nil, 0)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Error("パースに失敗しました", err)
 		return
 	}
 
@@ -26,7 +26,7 @@ func TestStation10(t *testing.T) {
 
 	pkg, err := config.Check("model", fset, []*ast.File{f}, nil)
 	if err != nil {
-		t.Error("エラーが発生しました", err)
+		t.Error("パッケージチェックに失敗しました", err)
 		return
 	}
 

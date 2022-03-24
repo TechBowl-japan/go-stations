@@ -4,75 +4,62 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"os/exec"
 	"strings"
-	"syscall"
 	"testing"
-	"time"
 
 	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/handler/router"
 )
 
 func TestStation19(t *testing.T) {
 	dbPath := "./temp_test.db"
 	if err := os.Setenv("DB_PATH", dbPath); err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("dbPathのセットに失敗しました。%v", err)
 		return
 	}
 
-	d, err := db.NewDB(dbPath)
+	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
-		t.Error(" エラーが発生しました", err)
+		t.Errorf("データベースの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
-		if err := d.Close(); err != nil {
-			t.Error(" エラーが発生しました", err)
+		if err := todoDB.Close(); err != nil {
+			t.Errorf("データベースのクローズに失敗しました: %v", err)
 			return
 		}
-	})
-	t.Cleanup(func() {
 		if err := os.Remove(dbPath); err != nil {
-			t.Error(" エラーが発生しました", err)
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
 			return
 		}
 	})
 
-	stmt, err := d.Prepare(`INSERT INTO todos(subject) VALUES(?)`)
+	stmt, err := todoDB.Prepare(`INSERT INTO todos(subject) VALUES(?)`)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("ステートメントの作成に失敗しました: %v", err)
 		return
 	}
 
 	t.Cleanup(func() {
 		if err := stmt.Close(); err != nil {
-			t.Error("エラーが発生しました", err)
+			t.Errorf("ステートメントのクローズに失敗しました: %v", err)
 			return
 		}
 	})
 
 	for i := 0; i < 3; i++ {
-		_, err = stmt.Exec("sbuject")
-		if err != nil {
-			t.Error("エラーが発生しました", err)
+		if _, err := stmt.Exec("sbuject"); err != nil {
+			t.Errorf("todoの追加に失敗しました: %v", err)
 			return
 		}
 	}
 
-	stop, err := procStart(t)
-	if err != nil {
-		t.Error("エラーが発生しました", err)
-		return
-	}
-
-	t.Cleanup(func() {
-		if err := stop(); err != nil {
-			t.Error("エラーが発生しました", err)
-			return
-		}
-	})
+	r := router.NewRouter(todoDB)
+	srv := httptest.NewServer(r)
+	defer srv.Close()
 
 	testcases := map[string]struct {
 		IDs                []string
@@ -97,23 +84,22 @@ func TestStation19(t *testing.T) {
 	}
 
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodDelete, "http://localhost:8080/todos",
+			req, err := http.NewRequest(http.MethodDelete, srv.URL+"/todos",
 				bytes.NewBufferString(fmt.Sprintf(`{"ids":[%s]}`, strings.Join(tc.IDs, ","))))
 			if err != nil {
-				t.Error("エラーが発生しました", err)
+				t.Errorf("リクエストの作成に失敗しました: %v", err)
 				return
 			}
 			req.Header.Add("Content-Type", "application/json")
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				t.Error("エラーが発生しました", err)
+				t.Errorf("リクエストの送信に失敗しました: %v", err)
 				return
 			}
 			t.Cleanup(func() {
 				if err := resp.Body.Close(); err != nil {
-					t.Error("エラーが発生しました", err)
+					t.Errorf("レスポンスのクローズに失敗しました: %v", err)
 					return
 				}
 			})
@@ -124,27 +110,4 @@ func TestStation19(t *testing.T) {
 			}
 		})
 	}
-}
-
-func procStart(t *testing.T) (func() error, error) {
-	t.Helper()
-
-	cmd := exec.Command("go", "run", "../../main.go")
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	time.Sleep(2 * time.Second)
-
-	stop := func() error {
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	}
-
-	return stop, nil
 }
