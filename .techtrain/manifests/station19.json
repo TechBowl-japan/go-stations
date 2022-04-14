@@ -7,9 +7,6 @@
       "type": "go-test",
       "module": true,
       "path": "./_test/sta19"
-    },
-    {
-      "type": "interview"
     }
   ]
 }
