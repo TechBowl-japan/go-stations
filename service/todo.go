@@ -26,7 +26,31 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
 
-	return nil, nil
+	var err error
+	var res sql.Result
+	var id int64
+	stmt, err := s.db.PrepareContext(ctx, insert)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err = stmt.ExecContext(ctx, subject, description)
+	if err != nil {
+		return nil, err
+	}
+	id, err = res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	data := stmt.QueryRowContext(ctx, confirm, int(id))
+	var todo *model.TODO
+	err = data.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return todo, err
 }
 
 // ReadTODO reads TODOs on DB.
