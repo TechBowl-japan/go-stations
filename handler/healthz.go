@@ -22,6 +22,6 @@ func (h *HealthzHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mes.Message = "OK"
 	err := json.NewEncoder(w).Encode(mes)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 }

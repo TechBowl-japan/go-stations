@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -51,9 +52,10 @@ func realMain() error {
 
 	// set http handlers
 	mux := router.NewRouter(todoDB)
-	http.ListenAndServe(defaultPort, mux)
-	http.HandleFunc("/healthz", handler.NewHealthzHandler().ServeHTTP)
+	mux.HandleFunc("/healthz", handler.NewHealthzHandler().ServeHTTP)
+	//http.HandleFunc("/healthz", handler.NewHealthzHandler().ServeHTTP)
+	fmt.Println("test1")
 	// TODO: ここから実装を行う
-
+	http.ListenAndServe(defaultPort, mux)
 	return nil
 }
