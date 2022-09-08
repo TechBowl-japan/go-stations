@@ -4,6 +4,8 @@ Railway では Git で自分が取り組んだ内容を記録するときに、�
 テストが通れば Station クリアとなります。
 クリア後、TechTrain の画面に戻り、クリアになっているかを確認してみてください。
 
+[ユーザーマニュアル](https://docs.google.com/presentation/d/1BJSPCWBfy5xtwvBanoRGB77Y0N6JWMAHemEOLP49IPE/edit?usp=sharing)
+
 ## バージョン情報
 
 |言語、フレームワークなど|バージョン|
