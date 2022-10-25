@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -13,14 +14,22 @@ type TODOHandler struct {
 }
 
 // NewTODOHandler returns TODOHandler based http.Handler.
-func NewTODOHandler(svc *service.TODOService) *TODOHandler {
+// func NewTODOHandler(svc *service.TODOService) *TODOHandler {
+// 	return &TODOHandler{
+// 		svc: svc,
+// 	}
+// }
+
+func NewTODOHandler() *TODOHandler {
 	return &TODOHandler{
-		svc: svc,
+		//svc: svc,
 	}
 }
 
 // Create handles the endpoint that creates the TODO.
-func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
+// func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
+func (h *TODOHandler) ServeHTTP(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
+	fmt.Fprint(nil, "Hello TODO!")
 	_, _ = h.svc.CreateTODO(ctx, "", "")
 	return &model.CreateTODOResponse{}, nil
 }
