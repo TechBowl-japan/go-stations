@@ -24,18 +24,22 @@ func TestStation13(t *testing.T) {
 		return
 	}
 
-	t.Cleanup(func() {
-		if err := os.Remove(dbPath); err != nil {
-			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
-			return
-		}
-	})
-
 	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
 		t.Errorf("データベースの作成に失敗しました: %v", err)
 		return
 	}
+
+	t.Cleanup(func() {
+		if err := todoDB.Close(); err != nil {
+			t.Errorf("DBのクローズに失敗しました: %v", err)
+			return
+		}
+		if err := os.Remove(dbPath); err != nil {
+			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
+			return
+		}
+	})
 
 	stmt, err := todoDB.Prepare(`INSERT INTO todos(subject) VALUES(?)`)
 	if err != nil {
