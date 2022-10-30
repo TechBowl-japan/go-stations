@@ -24,12 +24,12 @@ func TestStation9(t *testing.T) {
 		return
 	}
 
-	t.Cleanup(func() {
-		if err := os.Remove(dbPath); err != nil {
-			t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
-			return
-		}
-	})
+	// t.Cleanup(func() {
+	// 	if err := os.Remove(dbPath); err != nil {
+	// 		t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
+	// 		return
+	// 	}
+	// })
 
 	todoDB, err := db.NewDB(dbPath)
 	if err != nil {

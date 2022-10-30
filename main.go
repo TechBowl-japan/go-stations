@@ -55,8 +55,10 @@ func realMain() error {
 	healthzHandler := handler.NewHealthzHandler()
 	mux.HandleFunc("/healthz", healthzHandler.ServeHTTP)
 	//	mux.Handle("/healthz", HealthzHandler)
-	todoHandler := handler.NewTODOHandler()
-	mux.HandleFunc("/todos", todoHandler.ServeHTTP)
+	//todoHandler := handler.NewTODOHandler(todoDB)
+	// mux.HandleFunc("/todos", todoHandler.Create)
+	//var svc *service.TODOService = service.NewTODOService(todoDB)
+	//mux.HandleFunc("/todos", todoHandler.ServeHTTP)
 
 	http.HandleFunc("/", hello)
 	//http.ListenAndServe(":8000", nil)
