@@ -48,8 +48,8 @@ func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*mo
 
 // Update handles the endpoint that updates the TODO.
 func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) (*model.UpdateTODOResponse, error) {
-	_, _ = h.svc.UpdateTODO(ctx, 0, "", "")
-	return &model.UpdateTODOResponse{}, nil
+	todo, _ := h.svc.UpdateTODO(ctx, int64(req.ID), req.Subject, req.Description)
+	return &model.UpdateTODOResponse{TODO: *todo}, nil
 }
 
 // Delete handles the endpoint that deletes the TODOs.
@@ -86,6 +86,37 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Fprintln(w, err, resp)
+	}
+
+	if r.Method == "PUT" {
+		var req model.UpdateTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, "decode error")
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if req.Subject == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, "Subject is empty")
+			fmt.Fprintln(w, r)
+			return
+		}
+		if req.ID == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, "ID is INVALID")
+			fmt.Fprintln(w, r)
+			return
+		}
+		resp, err := h.Update(r.Context(), &req)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(&resp); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if r.Method == "GET" {
