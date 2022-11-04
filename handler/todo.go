@@ -58,8 +58,11 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 
 // Delete handles the endpoint that deletes the TODOs.
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
-	return &model.DeleteTODOResponse{}, nil
+	err := h.svc.DeleteTODO(ctx, req.IDs)
+	if err != nil {
+		return nil, err
+	}
+	return &model.DeleteTODOResponse{}, err
 }
 
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +145,36 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, err)
 			return
 		}
+	}
+	if r.Method == "DELETE" {
+		var req model.DeleteTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, "decode error")
+			//http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// fmt.Fprintln(w, "Decoded")
+		// fmt.Fprintln(w, req)
+		// fmt.Fprintln(w, len(req.IDs))
+		if len(req.IDs) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, req)
+			fmt.Fprintln(w, r.Body)
+			return
+		}
+		resp, err := h.Delete(r.Context(), &req)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if err = json.NewEncoder(w).Encode(resp); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, "encode error")
+
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	}
 	//h.Create(nil, nil)
 }

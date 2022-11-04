@@ -47,10 +47,9 @@ type (
 
 	// A DeleteTODORequest expresses ...
 	DeleteTODORequest struct {
-		IDs []int `json:"id"`
+		IDs []int64 `json:"ids"`
 	}
 	// A DeleteTODOResponse expresses ...
 	DeleteTODOResponse struct {
-		TODO `json:"todo"`
 	}
 )
