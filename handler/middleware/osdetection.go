@@ -8,29 +8,31 @@ import (
 	"github.com/mileusna/useragent"
 )
 
-type contextKey string
+// type contextKey string
 
-const tokenContextKey contextKey = "OS"
+// const tokenContextKey contextKey = "OS"
 
 func OsDetect(h http.Handler) http.Handler {
 	fmt.Println("start OS detection")
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ua := useragent.Parse(r.UserAgent())
 		ctx := SetOSVersion(r.Context(), ua.OS)
+		//ctx = context.WithValue(ctx, "timestamp", time.Now())
+		ctx1 := AddStartTime(ctx)
 		fmt.Println("OS is")
-		fmt.Println(GetOSVersion(ctx))
-		h.ServeHTTP(w, r.WithContext(ctx))
+		fmt.Println(ctx1)
+		h.ServeHTTP(w, r.WithContext(ctx1))
 	}
 	return http.HandlerFunc(fn)
 }
 
 func SetOSVersion(parents context.Context, t string) context.Context {
 	fmt.Println("SetOSVersion function starts")
-	return context.WithValue(parents, tokenContextKey, t)
+	return context.WithValue(parents, "OS", t)
 }
 
 func GetOSVersion(ctx context.Context) (string, error) {
-	v := ctx.Value(tokenContextKey)
+	v := ctx.Value("OS")
 	token, ok := v.(string)
 	if !ok {
 		return "", fmt.Errorf("token not found")

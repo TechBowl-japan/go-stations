@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/TechBowl-japan/go-stations/handler/middleware"
 	"github.com/TechBowl-japan/go-stations/model"
 )
 
@@ -20,13 +21,6 @@ func NewHealthzHandler() *HealthzHandler {
 
 // ServeHTTP implements http.Handler interface.
 func (h *HealthzHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprintln("ServeHTTP Starts")
-	// w, err := json.MarShal("ok")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-
 	_ = &model.HealthzResponse{}
 	response := &model.HealthzResponse{
 		Message: "OK",
@@ -35,7 +29,8 @@ func (h *HealthzHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := enc.Encode(response); err != nil {
 		log.Println(err)
 	}
-
+	println("Health handler done")
+	middleware.AccessLogOutput(w, r)
 }
 
 func Handler(writer http.ResponseWriter, request *http.Request) {
