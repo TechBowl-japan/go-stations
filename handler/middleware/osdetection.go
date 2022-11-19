@@ -12,23 +12,37 @@ import (
 
 // const tokenContextKey contextKey = "OS"
 
-func OsDetect(h http.Handler) http.Handler {
+func DetectOS(h http.Handler) http.Handler {
 	fmt.Println("start OS detection")
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ua := useragent.Parse(r.UserAgent())
 		ctx := SetOSVersion(r.Context(), ua.OS)
 		//ctx = context.WithValue(ctx, "timestamp", time.Now())
-		ctx1 := AddStartTime(ctx)
+		//ctx1 := AddStartTime(ctx)
 		fmt.Println("OS is")
-		fmt.Println(ctx1)
-		h.ServeHTTP(w, r.WithContext(ctx1))
+		fmt.Println(ctx)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(fn)
 }
 
-func SetOSVersion(parents context.Context, t string) context.Context {
+func DetectOS1(h http.HandlerFunc) http.HandlerFunc {
+	fmt.Println("start OS detection")
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ua := useragent.Parse(r.UserAgent())
+		ctx := SetOSVersion(r.Context(), ua.OS)
+		//ctx = context.WithValue(ctx, "timestamp", time.Now())
+		//ctx1 := AddStartTime(ctx)
+		fmt.Println("OS is")
+		fmt.Println(ctx)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(fn)
+}
+
+func SetOSVersion(ctx context.Context, t string) context.Context {
 	fmt.Println("SetOSVersion function starts")
-	return context.WithValue(parents, "OS", t)
+	return context.WithValue(ctx, "OS", t)
 }
 
 func GetOSVersion(ctx context.Context) (string, error) {

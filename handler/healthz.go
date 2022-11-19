@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/TechBowl-japan/go-stations/handler/middleware"
 	"github.com/TechBowl-japan/go-stations/model"
 )
 
@@ -29,8 +29,9 @@ func (h *HealthzHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := enc.Encode(response); err != nil {
 		log.Println(err)
 	}
+	time.Sleep(5 * time.Second)
 	println("Health handler done")
-	middleware.AccessLogOutput(w, r)
+	//middleware.AccessLogOutput(w, r)
 }
 
 func Handler(writer http.ResponseWriter, request *http.Request) {

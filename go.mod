@@ -10,6 +10,7 @@ require (
 require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/mileusna/useragent v1.2.1 // indirect
 	golang.org/dl v0.0.0-20221004172356-1ded7e0d6ba9 // indirect
