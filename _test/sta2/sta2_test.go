@@ -17,18 +17,8 @@ func TestStation2(t *testing.T) {
 		return
 	}
 
-	// t.Cleanup(func() {
-	// 	if err := os.Remove(dbPath); err != nil {
-	// 		t.Errorf("テスト用のDBファイルの削除に失敗しました: %v", err)
-	// 		return
-	// 	}
-	// })
 
-	todoDB, err := db.NewDB(dbPath)
-	if err != nil {
-		t.Error("DBの作成に失敗しました。", err)
-		return
-	}
+
 	r := router.NewRouter(todoDB)
 	srv := httptest.NewServer(r)
 	defer srv.Close()
