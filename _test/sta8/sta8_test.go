@@ -22,11 +22,8 @@ func TestStation8(t *testing.T) {
 	testcases := map[string]struct {
 		Subject     string
 		Description string
-		WantError   error
 	}{
-		"Subject is empty": {
-			WantError: sqlite3.ErrConstraint,
-		},
+		"Subject is empty": {},
 		"Description is empty": {
 			Subject: "todo subject",
 		},
@@ -54,6 +51,8 @@ func TestStation8(t *testing.T) {
 		}
 	})
 
+	var sqlite3Err sqlite3.Error
+
 	for name, tc := range testcases {
 		name := name
 		tc := tc
@@ -62,16 +61,11 @@ func TestStation8(t *testing.T) {
 
 			svc := service.NewTODOService(d)
 			got, err := svc.CreateTODO(context.Background(), tc.Subject, tc.Description)
-			switch tc.WantError {
-			case nil:
-				if err != nil {
-					t.Error("エラーが発生しました", err)
-					return
+			if err != nil {
+				if !errors.As(err, &sqlite3Err) {
+					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, sqlite3Err)
 				}
-			default:
-				if !errors.As(err, &tc.WantError) {
-					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, tc.WantError)
-				}
+				t.Error("エラーが発生しました", err)
 				return
 			}
 

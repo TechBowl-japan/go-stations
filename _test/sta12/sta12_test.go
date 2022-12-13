@@ -59,14 +59,10 @@ func TestStation12(t *testing.T) {
 		ID          int64
 		Subject     string
 		Description string
-		WantError   error
 	}{
-		"ID is empty": {
-			WantError: &model.ErrNotFound{},
-		},
+		"ID is empty": {},
 		"Subject is empty": {
-			ID:        1,
-			WantError: sqlite3.ErrConstraint,
+			ID: 1,
 		},
 		"Description is empty": {
 			ID:      1,
@@ -79,23 +75,20 @@ func TestStation12(t *testing.T) {
 		},
 	}
 
+	var sqlite3Err sqlite3.Error
+
 	for name, tc := range testcases {
 		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			svc := service.NewTODOService(d)
 			got, err := svc.UpdateTODO(context.Background(), tc.ID, tc.Subject, tc.Description)
-			switch tc.WantError {
-			case nil:
-				if err != nil {
-					t.Errorf("予期しないエラーが発生しました: %v", err)
+			if err != nil {
+				if !errors.As(err, &sqlite3Err) {
+					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, sqlite3Err)
 					return
 				}
-			default:
-				if !errors.As(err, &tc.WantError) {
-					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, tc.WantError)
-					return
-				}
+				t.Errorf("予期しないエラーが発生しました: %v", err)
 				return
 			}
 
