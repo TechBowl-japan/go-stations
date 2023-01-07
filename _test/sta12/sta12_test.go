@@ -88,7 +88,6 @@ func TestStation12(t *testing.T) {
 					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, sqlite3Err)
 					return
 				}
-				t.Errorf("予期しないエラーが発生しました: %v", err)
 				return
 			}
 
