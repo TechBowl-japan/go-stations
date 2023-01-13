@@ -88,6 +88,10 @@ func TestStation12(t *testing.T) {
 					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, sqlite3Err)
 					return
 				}
+				if err.(sqlite3.Error).Code != sqlite3.ErrConstraint {
+					t.Errorf("期待していないsqlite3のエラーナンバーです, got = %d, want = %d", err.(sqlite3.Error).Code, sqlite3.ErrConstraint)
+					return
+				}
 				return
 			}
 
