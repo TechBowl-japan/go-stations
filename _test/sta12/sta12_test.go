@@ -59,10 +59,14 @@ func TestStation12(t *testing.T) {
 		ID          int64
 		Subject     string
 		Description string
+		WantError   error
 	}{
-		"ID is empty": {},
+		"ID is empty": {
+			WantError: &model.ErrNotFound{},
+		},
 		"Subject is empty": {
-			ID: 1,
+			ID:        1,
+			WantError: &sqlite3.Error{},
 		},
 		"Description is empty": {
 			ID:      1,
@@ -75,21 +79,31 @@ func TestStation12(t *testing.T) {
 		},
 	}
 
-	var sqlite3Err sqlite3.Error
-
 	for name, tc := range testcases {
 		name := name
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			svc := service.NewTODOService(d)
 			got, err := svc.UpdateTODO(context.Background(), tc.ID, tc.Subject, tc.Description)
-			if err != nil {
-				if !errors.As(err, &sqlite3Err) {
-					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, sqlite3Err)
+			switch tc.WantError {
+			case nil:
+				if err != nil {
+					t.Errorf("予期しないエラーが発生しました: %v", err)
+					return
+				}
+			case sqlite3.Error{}:
+				if !errors.As(err, &tc.WantError) {
+					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, tc.WantError)
 					return
 				}
 				if err.(sqlite3.Error).Code != sqlite3.ErrConstraint {
 					t.Errorf("期待していないsqlite3のエラーナンバーです, got = %d, want = %d", err.(sqlite3.Error).Code, sqlite3.ErrConstraint)
+					return
+				}
+				return
+			default:
+				if !errors.As(err, &tc.WantError) {
+					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, tc.WantError)
 					return
 				}
 				return
