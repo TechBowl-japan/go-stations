@@ -2,8 +2,8 @@ package sta18_test
 
 import (
 	"context"
-	"errors"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/TechBowl-japan/go-stations/db"
@@ -100,7 +100,7 @@ func TestStation18(t *testing.T) {
 					return
 				}
 			default:
-				if !errors.As(err, &tc.WantError) {
+				if reflect.TypeOf(err) != reflect.TypeOf(tc.WantError) {
 					t.Errorf("期待していないエラーの型です, got = %+v, want = %+v", err, tc.WantError)
 					return
 				}
