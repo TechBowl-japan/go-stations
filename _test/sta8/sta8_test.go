@@ -62,7 +62,7 @@ func TestStation8(t *testing.T) {
 			svc := service.NewTODOService(d)
 			got, err := svc.CreateTODO(context.Background(), tc.Subject, tc.Description)
 			if err != nil {
-				if !errors.As(err, sqlite3Err) {
+				if !errors.As(err, &sqlite3Err) {
 					t.Errorf("期待していないエラーの Type です, got = %t, want = %+v", err, sqlite3Err)
 				}
 				if err.(sqlite3.Error).Code != sqlite3.ErrConstraint {
