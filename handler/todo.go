@@ -27,8 +27,7 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		todoRequest := &model.CreateTODORequest{}
 		err := json.NewDecoder(r.Body).Decode(&todoRequest)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			//log.Println(err)
+			log.Println(err)
 		}
 
 		if todoRequest.Subject == "" {
@@ -46,7 +45,37 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
-		return
+	}
+
+	if r.Method == http.MethodPut {
+		todoRequest := &model.UpdateTODORequest{}
+		err := json.NewDecoder(r.Body).Decode(&todoRequest)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println(err)
+		}
+
+		if todoRequest.ID == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if todoRequest.Subject == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		todo := &model.TODO{}
+		todo, err = h.svc.UpdateTODO(r.Context(), todoRequest.ID, todoRequest.Subject, todoRequest.Description)
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = json.NewEncoder(w).Encode(&model.CreateTODOResponse{TODO: *todo})
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+		}
 	}
 }
 
