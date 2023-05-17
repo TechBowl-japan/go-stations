@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -74,6 +75,39 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err = json.NewEncoder(w).Encode(&model.CreateTODOResponse{TODO: *todo})
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
+			log.Println(err)
+		}
+	}
+
+	if r.Method == http.MethodGet {
+		todoRequest := &model.ReadTODORequest{PrevID: 0, Size: 5}
+		if r.URL.Query().Get("prev_id") != "" {
+			prevID, err := strconv.Atoi(r.URL.Query().Get("prev_id"))
+			if err != nil {
+				log.Println(err)
+			}
+			todoRequest.PrevID = int64(prevID)
+		}
+
+		if r.URL.Query().Get("size") != "" {
+			size, err := strconv.Atoi(r.URL.Query().Get("size"))
+			if err != nil {
+				log.Println(err)
+			}
+			todoRequest.Size = int64(size)
+		}
+
+		todos, err := h.svc.ReadTODO(r.Context(), todoRequest.PrevID, todoRequest.Size)
+		if err != nil {
+			log.Println(err)
+		}
+
+		convertedTodos := make([]model.TODO, len(todos))
+		for i, todo := range todos {
+			convertedTodos[i] = *todo
+		}
+		err = json.NewEncoder(w).Encode(&model.ReadTODOResponse{TODOs: convertedTodos})
+		if err != nil {
 			log.Println(err)
 		}
 	}
