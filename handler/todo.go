@@ -111,6 +111,31 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 	}
+
+	if r.Method == http.MethodDelete {
+		todoRequest := &model.DeleteTODORequest{}
+		err := json.NewDecoder(r.Body).Decode(&todoRequest)
+		if err != nil {
+			log.Println(err)
+		}
+
+		if todoRequest.IDs == nil {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+		if len(todoRequest.IDs) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+		err = h.svc.DeleteTODO(r.Context(), todoRequest.IDs)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+		}
+
+		err = json.NewEncoder(w).Encode(&model.DeleteTODOResponse{})
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println(err)
+		}
+	}
 }
 
 // Create handles the endpoint that creates the TODO.
