@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/TechBowl-japan/go-stations/db"
-	"github.com/TechBowl-japan/go-stations/handler"
 	"github.com/TechBowl-japan/go-stations/handler/router"
 )
 
@@ -37,8 +36,6 @@ func TestStation5(t *testing.T) {
 	})
 
 	r := router.NewRouter(todoDB)
-	h := handler.NewHealthzHandler()
-	r.Handle("/healthz", h)
 	srv := httptest.NewServer(r)
 	defer srv.Close()
 	req, err := http.NewRequest(http.MethodGet, srv.URL+"/healthz", nil)
