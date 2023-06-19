@@ -57,7 +57,7 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 		return nil, err
 	}
 
-	return &model.TODO{ID: int(todo_id), Subject: subject, Description: description, CreatedAt: created_at, UpdatedAt: updated_at}, nil
+	return &model.TODO{ID: todo_id, Subject: subject, Description: description, CreatedAt: created_at, UpdatedAt: updated_at}, nil
 }
 
 // ReadTODO reads TODOs on DB.
@@ -67,7 +67,34 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
 
-	return nil, nil
+	var (
+		res  = []*model.TODO{}
+		rows *sql.Rows
+
+		err error
+	)
+
+	if prevID == 0 {
+		rows, err = s.db.QueryContext(ctx, read, size)
+
+	} else {
+		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// それぞれのRowに対して処理
+	for rows.Next() {
+		row := model.TODO{}
+		err := rows.Scan(&row.ID, &row.Subject, &row.Description, &row.CreatedAt, &row.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, &row)
+	}
+	return res, nil
 }
 
 // UpdateTODO updates the TODO on DB.
@@ -108,7 +135,7 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 
 	// 値の取り出し
 	err = updated_todo.Scan(&subject, &description, &created_at, &updated_at)
-	return &model.TODO{ID: int(todo_id), Subject: subject, Description: description, CreatedAt: created_at, UpdatedAt: updated_at}, nil
+	return &model.TODO{ID: todo_id, Subject: subject, Description: description, CreatedAt: created_at, UpdatedAt: updated_at}, nil
 }
 
 // DeleteTODO deletes TODOs on DB by ids.
