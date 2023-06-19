@@ -31,7 +31,7 @@ type (
 	}
 	// A ReadTODOResponse expresses ...
 	ReadTODOResponse struct {
-		TODOs []TODO `json:"todos"`
+		TODOs []*TODO `json:"todos"`
 	}
 
 	// A UpdateTODORequest expresses ...
