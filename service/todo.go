@@ -75,10 +75,10 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	)
 
 	if prevID == 0 {
-		rows, err = s.db.QueryContext(ctx, read, size)
+		rows, err = s.db.QueryContext(ctx, read, int(size))
 
 	} else {
-		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
+		rows, err = s.db.QueryContext(ctx, readWithID, int(prevID), int(size))
 	}
 
 	if err != nil {

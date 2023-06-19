@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -58,6 +59,36 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				err = json.NewEncoder(w).Encode(res)
 			}
 		}
+
+	case http.MethodGet:
+		var (
+			req *model.ReadTODORequest = &model.ReadTODORequest{PrevID: 0, Size: 5}
+			res *model.ReadTODOResponse
+			err error
+		)
+		if r.URL.Query().Get("prev_id") != "" {
+			req.PrevID, err = strconv.ParseInt(r.URL.Query().Get("prev_id"), 10, 64)
+		}
+		if r.URL.Query().Get("size") != "" {
+			req.Size, err = strconv.ParseInt(r.URL.Query().Get("size"), 10, 64)
+		}
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		res, err = h.Read(r.Context(), req)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		err = json.NewEncoder(w).Encode(res)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	}
 }
 
@@ -69,8 +100,9 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
-	_, _ = h.svc.ReadTODO(ctx, 0, 0)
-	return &model.ReadTODOResponse{}, nil
+	res, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+
+	return &model.ReadTODOResponse{TODOs: res}, err
 }
 
 // Update handles the endpoint that updates the TODO.
