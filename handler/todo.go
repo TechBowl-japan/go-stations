@@ -20,39 +20,86 @@ func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 		svc: svc,
 	}
 }
-
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		// Decode the request body into CreateTODORequest
-		req := &model.CreateTODORequest{}
-		decoder := json.NewDecoder(r.Body)
-		if err := decoder.Decode(req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-
-		// subjectが空文字列かどうかをチェック
-		if req.Subject == "" {
-			http.Error(w, "Subject cannot be empty", http.StatusBadRequest)
-			return
-		}
-
-		// Call the Create method
-		res, err := h.Create(r.Context(), req)
-		if err != nil {
-			http.Error(w, "Failed to create TODO", http.StatusInternalServerError)
-			return
-		}
-
-		// Send the response back as JSON
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(res); err != nil {
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		}
-	} else {
+	switch r.Method {
+	case http.MethodPost:
+		h.handlePost(w, r)
+	case http.MethodPut:
+		h.handlePut(w, r)
+	default:
 		http.Error(w, "Unsupported request method", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *TODOHandler) handlePost(w http.ResponseWriter, r *http.Request) {
+	// Decode the request body into CreateTODORequest
+	req := &model.CreateTODORequest{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// subjectが空文字列かどうかをチェック
+	if req.Subject == "" {
+		http.Error(w, "Subject cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	// Call the Create method
+	res, err := h.Create(r.Context(), req)
+	if err != nil {
+		http.Error(w, "Failed to create TODO", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the response back as JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(res); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
+
+func (h *TODOHandler) handlePut(w http.ResponseWriter, r *http.Request) {
+	// Decode the request body into UpdateTODORequest
+	req := &model.UpdateTODORequest{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// idが0かどうかをチェック
+	if req.ID == 0 {
+		http.Error(w, "ID cannot be 0", http.StatusBadRequest)
+		return
+	}
+	// subjectが空文字列かどうかをチェック
+	if req.Subject == "" {
+		http.Error(w, "Subject cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	// Call the Update method
+	res, err := h.Update(r.Context(), req)
+	if err != nil {
+		// エラーが ErrNotFound の場合、404 Not Found を返す
+		if _, ok := err.(*model.ErrNotFound); ok {
+			http.Error(w, "TODO not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to update TODO", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Send the response back as JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(res); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
 
@@ -77,8 +124,15 @@ func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*mo
 
 // Update handles the endpoint that updates the TODO.
 func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) (*model.UpdateTODOResponse, error) {
-	_, _ = h.svc.UpdateTODO(ctx, 0, "", "")
-	return &model.UpdateTODOResponse{}, nil
+	todo, err := h.svc.UpdateTODO(ctx, req.ID, req.Subject, req.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &model.UpdateTODOResponse{
+		TODO: *todo,
+	}
+	return res, nil
 }
 
 // Delete handles the endpoint that deletes the TODOs.
