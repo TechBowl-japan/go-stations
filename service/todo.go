@@ -58,6 +58,7 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 // ReadTODO reads TODOs on DB.
 func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*model.TODO, error) {
 	const (
+		allRead    = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC`
 		read       = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
@@ -66,7 +67,9 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	var err error
 
 	// Query with or without the prevID
-	if prevID > 0 {
+	if prevID == 0 && size == 0 {
+		rows, err = s.db.QueryContext(ctx, allRead)
+	} else if prevID > 0 {
 		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
 	} else {
 		rows, err = s.db.QueryContext(ctx, read, size)
