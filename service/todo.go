@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"database/sql"
+	//"fmt"
+	"log"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -25,9 +27,33 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 		insert  = `INSERT INTO todos(subject, description) VALUES(?, ?)`
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
-	
+	stmt, err := s.db.PrepareContext(ctx, insert)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
 
-	return nil, nil
+	result, err := stmt.ExecContext(ctx, subject, description)
+    if err != nil {
+		log.Println("Failed to get todo with id")
+		return nil, err
+	}
+    id, err := result.LastInsertId()
+	if err != nil {
+		log.Println("Failed to get id")
+		return nil, err
+	}
+    
+	row := s.db.QueryRowContext(ctx, confirm, id)
+	todo := &model.TODO{}
+	err = row.Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		log.Println("Failed to scan todo")
+		return nil, err
+	}
+
+	return todo, nil
 }
 
 // ReadTODO reads TODOs on DB.
@@ -36,6 +62,7 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		read       = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
+
 
 	return nil, nil
 }
