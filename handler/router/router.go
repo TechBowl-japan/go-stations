@@ -11,5 +11,6 @@ func NewRouter(todoDB *sql.DB) *http.ServeMux {
 	// register routes
 	mux := http.NewServeMux()
 	mux.Handle("/healthz", &handler.HealthzHandler{})
+	mux.Handle("/todos", &handler.TODOHandler{})
 	return mux
 }
