@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -41,4 +43,35 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
 	_ = h.svc.DeleteTODO(ctx, nil)
 	return &model.DeleteTODOResponse{}, nil
+}
+
+func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "This is not POST method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var reqCreateTodo model.CreateTODORequest
+	if err := json.NewDecoder(r.Body).Decode(&reqCreateTodo); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if reqCreateTodo.Subject == "" {
+		http.Error(w, "Subject is empty", http.StatusBadRequest)
+		return
+	}
+	var resCreateTodo model.CreateTODOResponse
+	todo, err := h.svc.CreateTODO(r.Context(), reqCreateTodo.Subject, reqCreateTodo.Description)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return 
+	}
+	resCreateTodo.TODO = *todo 
+	w.WriteHeader(http.StatusOK)
+	
+	if err := json.NewEncoder(w).Encode(&resCreateTodo); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return 
+	}
 }
