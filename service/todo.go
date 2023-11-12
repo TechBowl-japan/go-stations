@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	//"fmt"
 	"log"
 
 	"github.com/TechBowl-japan/go-stations/model"
@@ -35,16 +34,16 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 	defer stmt.Close()
 
 	result, err := stmt.ExecContext(ctx, subject, description)
-    if err != nil {
+	if err != nil {
 		log.Println("Failed to get todo with id")
 		return nil, err
 	}
-    id, err := result.LastInsertId()
+	id, err := result.LastInsertId()
 	if err != nil {
 		log.Println("Failed to get id")
 		return nil, err
 	}
-    
+
 	row := s.db.QueryRowContext(ctx, confirm, id)
 	todo := &model.TODO{}
 	err = row.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
@@ -63,7 +62,6 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
 
-
 	return nil, nil
 }
 
@@ -71,10 +69,39 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, description string) (*model.TODO, error) {
 	const (
 		update  = `UPDATE todos SET subject = ?, description = ? WHERE id = ?`
-		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
+		confirm = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
+	stmt, err := s.db.PrepareContext(ctx, update)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
 
-	return nil, nil
+	result, err := stmt.ExecContext(ctx, subject, description, id)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if rows == 0 {
+		log.Println("Expected to update more than 1 row, but no rows were updated.")
+		return nil, model.NewErrNotFound(id)
+	}
+
+	row := s.db.QueryRowContext(ctx, confirm, id)
+	todo := &model.TODO{}
+	err = row.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return todo, nil
 }
 
 // DeleteTODO deletes TODOs on DB by ids.
