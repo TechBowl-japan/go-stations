@@ -46,32 +46,70 @@ func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) 
 }
 
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "This is not POST method", http.StatusMethodNotAllowed)
-		return
-	}
+	if r.Method == http.MethodPost {
+		var reqCreateTodo model.CreateTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&reqCreateTodo); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	var reqCreateTodo model.CreateTODORequest
-	if err := json.NewDecoder(r.Body).Decode(&reqCreateTodo); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+		if reqCreateTodo.Subject == "" {
+			http.Error(w, "Subject was empty", http.StatusBadRequest)
+			return
+		}
+		var resCreateTodo model.CreateTODOResponse
+		todo, err := h.svc.CreateTODO(r.Context(), reqCreateTodo.Subject, reqCreateTodo.Description)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return 
+		}
+		resCreateTodo.TODO = *todo 
+		w.WriteHeader(http.StatusOK)
+		
+		if err := json.NewEncoder(w).Encode(&resCreateTodo); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return 
+		}
+		
+	} else if r.Method == http.MethodPut {
+		var reqUpdateTodo model.UpdateTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&reqUpdateTodo); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return 
+		}
 
-	if reqCreateTodo.Subject == "" {
-		http.Error(w, "Subject is empty", http.StatusBadRequest)
-		return
-	}
-	var resCreateTodo model.CreateTODOResponse
-	todo, err := h.svc.CreateTODO(r.Context(), reqCreateTodo.Subject, reqCreateTodo.Description)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return 
-	}
-	resCreateTodo.TODO = *todo 
-	w.WriteHeader(http.StatusOK)
-	
-	if err := json.NewEncoder(w).Encode(&resCreateTodo); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return 
+		if reqUpdateTodo.ID == 0 {
+			http.Error(w, "ID was not propriate.", http.StatusBadRequest)
+			return 
+		}
+
+		if reqUpdateTodo.Subject == "" {
+			http.Error(w, "Subject was empty", http.StatusBadRequest)
+			return
+		}
+
+		var resUpdateTodo model.UpdateTODOResponse
+		todo, err := h.svc.UpdateTODO(r.Context(), reqUpdateTodo.ID, reqUpdateTodo.Subject, reqUpdateTodo.Description)
+        
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return 
+		}
+
+		if todo == nil {
+			http.NotFound(w, r)
+			return 
+		}
+
+		resUpdateTodo.TODO = *todo 
+		w.WriteHeader(http.StatusOK)
+		
+		if err := json.NewEncoder(w).Encode(&resUpdateTodo); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return 
+		}
+
+	} else {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
