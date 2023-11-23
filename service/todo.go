@@ -64,9 +64,19 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	var rows *sql.Rows
 	var err error
 	if prevID == 0 {
-		rows, err = s.db.QueryContext(ctx, read, size)
+		if size <= 0 {
+			const query = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC`
+			rows, err = s.db.QueryContext(ctx, query, size)
+		} else {
+			rows, err = s.db.QueryContext(ctx, read, size)
+		}
 	} else {
-		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
+		if size <= 0 {
+			const queryWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC`
+			rows, err = s.db.QueryContext(ctx, queryWithID, prevID, size)
+		} else {
+			rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
+		}
 	}
 	if err != nil {
 		log.Println(err)

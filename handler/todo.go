@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
+	"strconv"
+	"log"
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
 )
@@ -109,6 +110,49 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return 
 		}
 
+	} else if r.Method == http.MethodGet {
+		var reqReadTodo model.ReadTODORequest
+		prev_idStr := r.URL.Query().Get("prev_id")
+		if prev_idStr == "" {
+			prev_idStr = "0"
+		}
+		prev_id, err := strconv.Atoi(prev_idStr)
+		if err != nil {
+			log.Println(err)
+			return 
+		}
+		reqReadTodo.PrevID = int64(prev_id)
+
+        size_Str := r.URL.Query().Get("size")
+		if size_Str == "" {
+			size_Str = "0"
+		}
+		size, err := strconv.Atoi(size_Str)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		reqReadTodo.Size = int64(size)
+
+		todos, err := h.svc.ReadTODO(r.Context(), reqReadTodo.PrevID, reqReadTodo.Size)
+		if err != nil {
+			log.Println(err)
+			return 
+		}
+
+		var resReadTodo model.ReadTODOResponse
+		if todos == nil {
+			resReadTodo.TODOs = []*model.TODO{} 
+		} else {
+			resReadTodo.TODOs = todos
+		}
+		
+		if err := json.NewEncoder(w).Encode(&resReadTodo); err != nil {
+			log.Printf("Error encoding response: %v", err)
+			return 
+		}
+
+		
 	} else {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
