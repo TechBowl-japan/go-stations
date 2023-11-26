@@ -153,7 +153,25 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		
-	} else {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	} else if r.Method == http.MethodDelete {
+		var reqDeleteTodo model.DeleteTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&reqDeleteTodo); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return 
+		}
+		if len(reqDeleteTodo.IDs) == 0 {
+			http.Error(w, "Id list was empty", http.StatusBadRequest)
+			return 
+		}
+		err := h.svc.DeleteTODO(r.Context(), reqDeleteTodo.IDs)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return 
+		}
+		var resDeleteTodo model.DeleteTODOResponse
+		if err := json.NewEncoder(w).Encode(&resDeleteTodo); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return 
+		}
 	}
 }
