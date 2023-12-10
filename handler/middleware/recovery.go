@@ -17,8 +17,6 @@ fn := func(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	h.ServeHTTP(w, r)
-
-
 }
 return http.HandlerFunc(fn)
 }
