@@ -146,6 +146,6 @@ components:
         created_at:
           type: string
           format: date-time
-        updateed_at:
+        updated_at:
           type: string
           format: date-time

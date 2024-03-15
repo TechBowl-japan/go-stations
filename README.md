@@ -23,7 +23,7 @@ SQLite| 3.35.* or higher
 |Yarn|1.22.*|
 
 バージョンが異なる場合、動作しない場合があります。  
-Node.js, Yarnのインストールがまだの場合は[html-staions](https://github.com/TechBowl-japan/html-stations)を参考にインストールしてください。  
+Node.js, Yarnのインストールがまだの場合は[html-stations](https://github.com/TechBowl-japan/html-stations)を参考にインストールしてください。  
 また、使用PCがWindowsの場合は、WSLを[この記事](https://docs.microsoft.com/ja-jp/windows/wsl/install-win10)を参考にインストールしてください。
 
 ### 「必要なツール」インストール済みの場合
