@@ -9,13 +9,13 @@ import (
 
 // A TODOService implements CRUD of TODO entities.
 type TODOService struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 // NewTODOService returns new TODOService.
 func NewTODOService(db *sql.DB) *TODOService {
 	return &TODOService{
-		db: db,
+		DB: db,
 	}
 }
 
@@ -23,10 +23,29 @@ func NewTODOService(db *sql.DB) *TODOService {
 func (s *TODOService) CreateTODO(ctx context.Context, subject, description string) (*model.TODO, error) {
 	const (
 		insert  = `INSERT INTO todos(subject, description) VALUES(?, ?)`
-		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
+		confirm = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
+	// TODOの作成
+	result, err := s.DB.ExecContext(ctx, insert, subject, description)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	// IDを取得
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	// TODOの取得
+	row := s.DB.QueryRowContext(ctx, confirm, id)
+	todo := &model.TODO{}
+	err = row.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return todo, nil
 }
 
 // ReadTODO reads TODOs on DB.
