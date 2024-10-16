@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -110,6 +111,47 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+	} else if r.Method == http.MethodGet {
+		query := r.URL.Query()
+		prevIDStr := query.Get("prev_id")
+		sizeStr := query.Get("size")
+
+		req := model.ReadTODORequest{}
+		var err error
+
+		if prevIDStr != "" {
+			req.PrevID, err = strconv.ParseInt(prevIDStr, 10, 64)
+			if err != nil {
+				http.Error(w, "Bad Request: Invalid prev_id", http.StatusBadRequest)
+				return
+			}
+		}
+		if sizeStr != "" {
+			req.Size, err = strconv.ParseInt(sizeStr, 10, 64)
+			if err != nil {
+				http.Error(w, "Bad Request: Invalid size", http.StatusBadRequest)
+				return
+			}
+		} else {
+			req.Size = 5
+		}
+
+		todos, err := h.SVC.ReadTODO(r.Context(), req.PrevID, req.Size)
+		if err != nil {
+			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response := &model.ReadTODOResponse{
+			TODOs: todos,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		encoder := json.NewEncoder(w)
+
+		if err := encoder.Encode(response); err != nil {
+			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	} else {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
