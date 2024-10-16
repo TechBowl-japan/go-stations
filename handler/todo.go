@@ -85,6 +85,31 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+	} else if r.Method == http.MethodPut {
+		var req model.UpdateTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Bad Request: Invalid JSON", http.StatusBadRequest)
+			return
+		}
+		if req.ID == 0 || req.Subject == "" {
+			http.Error(w, "Bad Request: ID and Subject cannot be empty", http.StatusBadRequest)
+			return
+		}
+		todo, err := h.SVC.UpdateTODO(r.Context(), req.ID, req.Subject, req.Description)
+		if err != nil {
+			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response := &model.UpdateTODOResponse{
+			TODO: todo,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		encoder := json.NewEncoder(w)
+		if err := encoder.Encode(response); err != nil {
+			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	} else {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
