@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/handler/middleware"
 	"github.com/TechBowl-japan/go-stations/handler/router"
 )
 
@@ -51,8 +52,12 @@ func realMain() error {
 	// NOTE: 新しいエンドポイントの登録はrouter.NewRouterの内部で行うようにする
 	mux := router.NewRouter(todoDB)
 
-	// TODO: サーバーをlistenする
-	err = http.ListenAndServe(port, mux)
+	// Recoveryミドルウェアでラップして、panicが発生してもアプリケーションがクラッシュしないようにする
+	// サーバーに渡すmuxを、Recoveryミドルウェアでラップする
+	wrapperMux := middleware.Recovery(mux)
+
+	// サーバーをlistenする
+	err = http.ListenAndServe(port, wrapperMux)
 	if err != nil {
 		return err
 	}
