@@ -44,7 +44,7 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 	if err != nil {
 		return nil, err
 	}
-
+	//成功した場合、新しいTODOを返す
 	return todo, nil
 }
 
