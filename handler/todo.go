@@ -50,6 +50,35 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		log.Println(w)
+	} else if r.Method == http.MethodPut {
+		var req model.UpdateTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		log.Println("Incoming Update Request:", req.ID, req.Subject, req.Description)
+		if req.ID == 0 {
+			http.Error(w, "id is required", http.StatusBadRequest)
+			return
+		}
+		if req.Subject == "" {
+			http.Error(w, "subject is required", http.StatusBadRequest)
+			return
+		}
+		ctx := r.Context()
+		todo, err := h.svc.UpdateTODO(ctx, int64(req.ID), req.Subject, req.Description)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Println("Updated TODO:", todo)
+		resp := &model.UpdateTODOResponse{
+			TODO: *todo,
+		}
+		log.Println("Response Data:", resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	} else {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}

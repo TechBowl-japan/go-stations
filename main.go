@@ -44,6 +44,7 @@ func realMain() error {
 	// set up sqlite3
 	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
+		log.Println("ここ")
 		return err
 	}
 	defer todoDB.Close()
