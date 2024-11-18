@@ -46,7 +46,7 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 		log.Println("ここでエラー5")
 		return nil, err
 	}
-	todo.ID = int(id)
+	todo.ID = id
 	log.Println("Scan todo", &todo)
 
 	return &todo, nil
@@ -102,12 +102,40 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
 
-	return nil, nil
+	result, err := s.db.ExecContext(ctx, update, subject, description, id)
+	if err != nil {
+		log.Println("ここでエラー3")
+		return nil, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Println("行数の取得中にエラーが発生しました:", err)
+		return nil, err
+	}
+
+	// 3. 更新された行が0件の場合、TODOが存在しないと判断し、ErrNotFoundを返す
+	if rowsAffected == 0 {
+		log.Println("指定されたIDのTODOが存在しません:", id)
+		return nil, &model.ErrNotFound{} // または適切なカスタムエラー
+	}
+
+	// Fetch the newly created TODO to return
+	var todo model.TODO
+	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		log.Println("ここでエラー5")
+		return nil, err
+	}
+	todo.ID = id
+	log.Println("Scan todo", &todo)
+
+	return &todo, nil
 }
 
 // DeleteTODO deletes TODOs on DB by ids.
 func (s *TODOService) DeleteTODO(ctx context.Context, ids []int64) error {
-	const deleteFmt = `DELETE FROM todos WHERE id IN (?%s)`
+	//const deleteFmt = `DELETE FROM todos WHERE id IN (?%s)`
 
 	return nil
 }
