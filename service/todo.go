@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -25,8 +26,30 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 		insert  = `INSERT INTO todos(subject, description) VALUES(?, ?)`
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
+	result, err := s.db.ExecContext(ctx, insert, subject, description)
+	if err != nil {
+		log.Println("ここでエラー3")
+		return nil, err
+	}
 
-	return nil, nil
+	// Get the last inserted ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		log.Println("ここでエラー4")
+		return nil, err
+	}
+
+	// Fetch the newly created TODO to return
+	var todo model.TODO
+	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		log.Println("ここでエラー5")
+		return nil, err
+	}
+	todo.ID = int(id)
+	log.Println("Scan todo", &todo)
+
+	return &todo, nil
 }
 
 // ReadTODO reads TODOs on DB.
@@ -36,7 +59,40 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
 	)
 
-	return nil, nil
+	var rows *sql.Rows
+	var err error
+
+	// If prevID is 0, fetch the latest 'size' records; otherwise, fetch records before prevID
+	if prevID == 0 {
+		rows, err = s.db.QueryContext(ctx, read, size)
+		log.Println("ここでエラー6")
+	} else {
+		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
+		log.Println("ここでエラー7")
+	}
+
+	if err != nil {
+		log.Println("ここでエラー8")
+		return nil, err
+	}
+	defer rows.Close()
+
+	var todos []*model.TODO
+	for rows.Next() {
+		var todo model.TODO
+		if err := rows.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
+			log.Println("ここでエラー9")
+			return nil, err
+		}
+		todos = append(todos, &todo)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("ここでエラー10")
+		return nil, err
+	}
+
+	return todos, nil
 }
 
 // UpdateTODO updates the TODO on DB.
