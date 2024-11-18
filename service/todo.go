@@ -61,20 +61,27 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 
 	var rows *sql.Rows
 	var err error
-
+	log.Println("prevID", prevID)
+	log.Println("size", size)
 	// If prevID is 0, fetch the latest 'size' records; otherwise, fetch records before prevID
-	if prevID == 0 {
+	if size <= 0 {
+		return []*model.TODO{}, err
+	} else if prevID == 1 {
+		return []*model.TODO{}, err
+	} else if prevID == 0 {
 		rows, err = s.db.QueryContext(ctx, read, size)
-		log.Println("ここでエラー6")
+		if err != nil {
+			log.Println("ここでエラー6")
+			return []*model.TODO{}, err
+		}
 	} else {
 		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
-		log.Println("ここでエラー7")
+		if err != nil {
+			log.Println("ここでエラー7")
+			return []*model.TODO{}, err
+		}
 	}
 
-	if err != nil {
-		log.Println("ここでエラー8")
-		return nil, err
-	}
 	defer rows.Close()
 
 	var todos []*model.TODO
@@ -82,7 +89,7 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		var todo model.TODO
 		if err := rows.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
 			log.Println("ここでエラー9")
-			return nil, err
+			return []*model.TODO{}, err
 		}
 		todos = append(todos, &todo)
 	}
@@ -91,7 +98,7 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		log.Println("ここでエラー10")
 		return nil, err
 	}
-
+	log.Println("到達")
 	return todos, nil
 }
 

@@ -79,6 +79,31 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+	} else if r.Method == http.MethodGet {
+		var req model.ReadTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		log.Println("Incoming Read Request:", req.PrevID, req.Size)
+		ctx := r.Context()
+		todos, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Println("Read TODOs:", todos)
+		todosConverted := make([]model.TODO, len(todos))
+		for i, todo := range todos {
+			todosConverted[i] = *todo
+		}
+		resp := &model.ReadTODOResponse{
+			TODOs: todosConverted,
+		}
+		log.Println("Response Data:", resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	} else {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
