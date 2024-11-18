@@ -1,13 +1,29 @@
 package model
 
+import "time"
+
 type (
 	// A TODO expresses ...
-	TODO struct{}
+	//TODOは保存されるTODOのデータ形式を表現します。
+	TODO struct {
+		ID          int       `json:"id"`
+		Subject     string    `json:"subject"`
+		Description string    `json:"description"`
+		CreatedAt   time.Time `json:"created_at"` //キャメルケースにより、Created_atではなく、CreatedAt
+		UpdatedAt   time.Time `json:"updated_at"`
+	}
 
 	// A CreateTODORequest expresses ...
-	CreateTODORequest struct{}
+	// CreateTODORequestは利用者からのリクエスト形式
+	CreateTODORequest struct {
+		Subject     string `json:"subject"`
+		Description string `json:"description"`
+	}
 	// A CreateTODOResponse expresses ...
-	CreateTODOResponse struct{}
+	// CreateTODOResponseは保存したTODOをレスポンスとして返す
+	CreateTODOResponse struct {
+		TODO TODO `json:"todo"`
+	}
 
 	// A ReadTODORequest expresses ...
 	ReadTODORequest struct{}

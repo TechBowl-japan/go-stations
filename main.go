@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -39,12 +40,14 @@ func realMain() error {
 	var err error
 	time.Local, err = time.LoadLocation("Asia/Tokyo")
 	if err != nil {
+		log.Println("Failed to load time zone:", err)
 		return err
 	}
 
 	// set up sqlite3
 	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
+		log.Println("Failed to initialize database:", dbPath, err)
 		return err
 	}
 	defer todoDB.Close()
@@ -53,6 +56,14 @@ func realMain() error {
 	mux := router.NewRouter(todoDB)
 
 	// TODO: サーバーをlistenする
-	log.Printf("Starting server on %s\n", port)
-	return http.ListenAndServe(port, mux)
+	// log.Printf("Starting server on port%s\n", port)
+	// return http.ListenAndServe(port, mux)
+	log.Printf("Starting server on port %s\n", port)
+	err = http.ListenAndServe(port, mux)
+	if err != nil {
+		log.Printf("Failed to start server on port %s: %v\n", port, err)
+		return fmt.Errorf("server failed to start on %s: %w", port, err)
+
+	}
+	return nil
 }
