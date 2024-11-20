@@ -28,14 +28,12 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 	)
 	result, err := s.db.ExecContext(ctx, insert, subject, description)
 	if err != nil {
-		log.Println("ここでエラー3")
 		return nil, err
 	}
 
 	// Get the last inserted ID
 	id, err := result.LastInsertId()
 	if err != nil {
-		log.Println("ここでエラー4")
 		return nil, err
 	}
 
@@ -43,7 +41,6 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 	var todo model.TODO
 	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
 	if err != nil {
-		log.Println("ここでエラー5")
 		return nil, err
 	}
 	todo.ID = id
@@ -65,19 +62,20 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	log.Println("size", size)
 	// If prevID is 0, fetch the latest 'size' records; otherwise, fetch records before prevID
 	if size <= 0 {
+		if prevID == 0 {
+			return []*model.TODO{}, nil
+		}
 		return []*model.TODO{}, err
 	} else if prevID == 1 {
 		return []*model.TODO{}, err
 	} else if prevID == 0 {
 		rows, err = s.db.QueryContext(ctx, read, size)
 		if err != nil {
-			log.Println("ここでエラー6")
 			return []*model.TODO{}, err
 		}
 	} else {
 		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
 		if err != nil {
-			log.Println("ここでエラー7")
 			return []*model.TODO{}, err
 		}
 	}
@@ -88,17 +86,14 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	for rows.Next() {
 		var todo model.TODO
 		if err := rows.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
-			log.Println("ここでエラー9")
 			return []*model.TODO{}, err
 		}
 		todos = append(todos, &todo)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Println("ここでエラー10")
 		return nil, err
 	}
-	log.Println("到達")
 	return todos, nil
 }
 
@@ -111,19 +106,16 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 
 	result, err := s.db.ExecContext(ctx, update, subject, description, id)
 	if err != nil {
-		log.Println("ここでエラー3")
 		return nil, err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Println("行数の取得中にエラーが発生しました:", err)
 		return nil, err
 	}
 
 	// 3. 更新された行が0件の場合、TODOが存在しないと判断し、ErrNotFoundを返す
 	if rowsAffected == 0 {
-		log.Println("指定されたIDのTODOが存在しません:", id)
 		return nil, &model.ErrNotFound{} // または適切なカスタムエラー
 	}
 
@@ -131,11 +123,9 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 	var todo model.TODO
 	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
 	if err != nil {
-		log.Println("ここでエラー5")
 		return nil, err
 	}
 	todo.ID = id
-	log.Println("Scan todo", &todo)
 
 	return &todo, nil
 }

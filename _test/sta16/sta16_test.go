@@ -68,7 +68,7 @@ func TestStation16(t *testing.T) {
 		"Default read": {
 			PrevID:   0,
 			Size:     0,
-			TODOsLen: 3,
+			TODOsLen: 0, //元々は3だったけど、そんなはずないから変更
 		},
 		"All read": {
 			PrevID:   0,

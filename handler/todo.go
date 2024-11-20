@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -80,27 +81,50 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else if r.Method == http.MethodGet {
-		var req model.ReadTODORequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		log.Println("Incoming Read Request:", req.PrevID, req.Size)
+		prevIDStr := r.URL.Query().Get("prev_id")
+		sizeStr := r.URL.Query().Get("size")
 		ctx := r.Context()
-		todos, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+		var prevID int64
+		var size int64
+
+		var err error
+		if prevIDStr == "" {
+			prevID = 0
+		} else {
+			prevID, err = strconv.ParseInt(prevIDStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid prev_id", http.StatusBadRequest)
+				return
+			}
+		}
+
+		if sizeStr == "" {
+			size = 0
+		} else {
+			size, err = strconv.ParseInt(sizeStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid prev_id", http.StatusBadRequest)
+				return
+			}
+		}
+
+		todos, err := h.svc.ReadTODO(ctx, prevID, size)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Println("Read TODOs:", todos)
-		todosConverted := make([]model.TODO, len(todos))
+
+		todosList := make([]model.TODO, len(todos))
 		for i, todo := range todos {
-			todosConverted[i] = *todo
+			todosList[i] = *todo
 		}
+
+		log.Print("Read TODOs:", todosList)
+
 		resp := &model.ReadTODOResponse{
-			TODOs: todosConverted,
+			TODOs: todosList,
 		}
-		log.Println("Response Data:", resp)
+
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
