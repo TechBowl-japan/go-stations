@@ -38,7 +38,7 @@ func (s *TODOService) CreateTODO(ctx context.Context, subject, description strin
 	//IDを使用してTODOを取得
 	row := s.db.QueryRowContext(ctx, confirm, id)
 	todo := &model.TODO{
-		ID: int(id),
+		ID: id,
 	}
 	err = row.Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
 	if err != nil {
@@ -64,8 +64,36 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 		update  = `UPDATE todos SET subject = ?, description = ? WHERE id = ?`
 		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
+	//TODOを更新
+	result, err := s.db.ExecContext(ctx, update, subject, description, id)
+	if err != nil {
+		//更新処理中にエラーが発生すれば、そのエラーを返す
+		return nil, err
+	}
 
-	return nil, nil
+	//影響を受けた行数を確認
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		//行数取得中にエラーが発生すれば、そのエラーを返す
+		return nil, err
+	}
+	//もし更新された行が0のとき
+	if rowsAffected == 0 {
+		//エラーとして、「対象のTODOが見つかりませんでした」と返す。
+		return nil, &model.ErrNotFound{Resource: "TODO"}
+	}
+	//更新されたTODOを取得
+	row := s.db.QueryRowContext(ctx, confirm, id)
+	todo := &model.TODO{
+		ID: id,
+	}
+	err = row.Scan(&todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		//データ取得中にエラーが発生すれば、そのエラーを返す
+		return nil, err
+	}
+	//更新されたTODOを返す
+	return todo, nil
 }
 
 // DeleteTODO deletes TODOs on DB by ids.

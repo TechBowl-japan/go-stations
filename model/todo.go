@@ -6,7 +6,7 @@ type (
 	// A TODO expresses ...
 	//TODOは保存されるTODOのデータ形式を表現します。
 	TODO struct {
-		ID          int       `json:"id"`
+		ID          int64     `json:"id"`
 		Subject     string    `json:"subject"`
 		Description string    `json:"description"`
 		CreatedAt   time.Time `json:"created_at"` //キャメルケースにより、Created_atではなく、CreatedAt
@@ -32,7 +32,7 @@ type (
 
 	// A UpdateTODORequest expresses ...
 	UpdateTODORequest struct {
-		ID          int    `json:"id"`
+		ID          int64  `json:"id"`
 		Subject     string `json:"subject"`
 		Description string `json:"description"`
 	}
