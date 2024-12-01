@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -32,6 +33,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleCreate(w, r) //TODO作成の処理を呼び出す
 	case http.MethodPut: //PUTメソッドの場合
 		h.handleUpdate(w, r) //TODO編集の処理を呼び出す
+	case http.MethodGet: //GETメソッドの場合
+		h.handleRead(w, r) //TODO取得の処理を呼び出す
 	default:
 		//他のメソッドは許可されていないため、エラーレスポンスを返す
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -90,10 +93,66 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 	}, nil
 }
 
+func (h *TODOHandler) handleRead(w http.ResponseWriter, r *http.Request) {
+	req := &model.ReadTODORequest{}
+	query := r.URL.Query()
+
+	if prevIDStr := query.Get("prev_id"); prevIDStr != "" {
+		var err error
+		req.PrevID, err = strconv.ParseInt(prevIDStr, 10, 64)
+		if err != nil {
+			log.Printf("Error parsing prev_id: %v", err)
+			http.Error(w, "Invalid prev_id", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if sizeStr := query.Get("size"); sizeStr != "" {
+		var err error
+		req.Size, err = strconv.ParseInt(sizeStr, 10, 64)
+		if err != nil {
+			log.Printf("Error parsing size: %v", err)
+			http.Error(w, "Invalid size", http.StatusBadRequest)
+			return
+		}
+	} else {
+		req.Size = 5
+	}
+
+	// TODOの取得処理を呼び出す
+	ctx := r.Context()
+	res, err := h.Read(ctx, req)
+	if err != nil {
+		log.Printf("Error reading TODOs: %v", err)
+		http.Error(w, "Failed to read TODOs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Printf("Error reading response: %v", err)
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+	}
+}
+
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
-	_, _ = h.svc.ReadTODO(ctx, 0, 0)
-	return &model.ReadTODOResponse{}, nil
+	todos, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	convertedTodos := make([]model.TODO, len(todos))
+	for i, todo := range todos {
+		if todo != nil {
+			convertedTodos[i] = *todo
+		}
+	}
+
+	return &model.ReadTODOResponse{
+		TODOs: convertedTodos,
+	}, nil
 }
 
 // handleUpdate handles the PUT request to update an existing TODO.

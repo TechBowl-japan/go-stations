@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -56,13 +57,19 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	)
 	var rows *sql.Rows
 	var err error
+	log.Printf("Received prevID=%d, size=%d", prevID, size)
+
 	if prevID > 0 {
+		log.Printf("Executing query with prevID=%d and size=%d", prevID, size)
 		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
 	} else {
+		log.Printf("Executing query: %s with size=%d", read, size)
 		rows, err = s.db.QueryContext(ctx, read, size)
 	}
+
 	if err != nil {
 		//クエリ実行中にエラーが発生した場合
+		log.Printf("Query execution failed: %v", err)
 		return nil, err
 	}
 	defer rows.Close() //rowsを必ず閉じる
@@ -73,6 +80,7 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 		todo := &model.TODO{}
 		//結果セットの行をスキャン
 		if err = rows.Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt); err != nil {
+			log.Printf("Row scanning failed: %v", err)
 			return nil, err
 		}
 		todos = append(todos, todo)
@@ -80,10 +88,12 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 
 	//繰り返し処理後のエラーを確認
 	if err := rows.Err(); err != nil {
+		log.Printf("Rows iteration failed: %v", err)
 		return nil, err
 	}
 
 	//結果を返す
+	log.Printf("Retrieved todos count: %d, details: %v", len(todos), todos)
 	return todos, nil
 }
 

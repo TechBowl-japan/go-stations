@@ -28,7 +28,7 @@ type (
 	// A ReadTODORequest expresses ...
 	ReadTODORequest struct {
 		PrevID int64 `json:"prev_id"`
-		Size   int   `json:"size"`
+		Size   int64 `json:"size"`
 	}
 	// A ReadTODOResponse expresses ...
 	ReadTODOResponse struct {
