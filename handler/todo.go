@@ -35,6 +35,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleUpdate(w, r) //TODO編集の処理を呼び出す
 	case http.MethodGet: //GETメソッドの場合
 		h.handleRead(w, r) //TODO取得の処理を呼び出す
+	case http.MethodDelete: //DELETEメソッドの場合
+		h.handleDelete(w, r) //TODO削除の処理を呼び出す
 	default:
 		//他のメソッドは許可されていないため、エラーレスポンスを返す
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -94,28 +96,37 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 }
 
 func (h *TODOHandler) handleRead(w http.ResponseWriter, r *http.Request) {
+	//ReadTODORequest構造体のインスタンスを作成
 	req := &model.ReadTODORequest{}
+	//クエリパラメータを取得
 	query := r.URL.Query()
 
+	//"prev_id"パラメータを解析
 	if prevIDStr := query.Get("prev_id"); prevIDStr != "" {
 		var err error
+		//文字列をint64に変換
 		req.PrevID, err = strconv.ParseInt(prevIDStr, 10, 64)
 		if err != nil {
+			//エラーが発生した場合、400BadRequestを返す
 			log.Printf("Error parsing prev_id: %v", err)
 			http.Error(w, "Invalid prev_id", http.StatusBadRequest)
 			return
 		}
 	}
 
+	//"size"パラメータを解析
 	if sizeStr := query.Get("size"); sizeStr != "" {
 		var err error
+		//文字列をint64に変換
 		req.Size, err = strconv.ParseInt(sizeStr, 10, 64)
 		if err != nil {
+			//エラーが発生した場合、400BadRequestを返す
 			log.Printf("Error parsing size: %v", err)
 			http.Error(w, "Invalid size", http.StatusBadRequest)
 			return
 		}
 	} else {
+		//"size"が指定されていない場合、デフォルト値を設定
 		req.Size = 5
 	}
 
@@ -123,14 +134,18 @@ func (h *TODOHandler) handleRead(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	res, err := h.Read(ctx, req)
 	if err != nil {
+		//エラーが発生した場合、500Internal Server Errorを返す
 		log.Printf("Error reading TODOs: %v", err)
 		http.Error(w, "Failed to read TODOs", http.StatusInternalServerError)
 		return
 	}
 
+	//レスポンスヘッダを設定して成功ステータス(200 OK)を返す
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	//レスポンスをJSONとしてエンコード
 	if err := json.NewEncoder(w).Encode(res); err != nil {
+		//エンコード中にエラーが発生した場合、500 Internal Server Errorを返す
 		log.Printf("Error reading response: %v", err)
 		http.Error(w, "Failed to read response", http.StatusInternalServerError)
 	}
@@ -138,18 +153,23 @@ func (h *TODOHandler) handleRead(w http.ResponseWriter, r *http.Request) {
 
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
+	// TODOを取得するためにサービス層を呼び出す。
 	todos, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
 	if err != nil {
+		//エラーが発生した場合は呼び出し元に返す
 		return nil, err
 	}
 
+	//サービス層から取得したTODOを変換
+	//[]*model.TODO型のスライスを[]model.TODO型のスライスに変換
 	convertedTodos := make([]model.TODO, len(todos))
 	for i, todo := range todos {
-		if todo != nil {
+		if todo != nil { //nilチェック
 			convertedTodos[i] = *todo
 		}
 	}
 
+	//変換されたTODOを含むレスポンスを返す
 	return &model.ReadTODOResponse{
 		TODOs: convertedTodos,
 	}, nil
@@ -216,8 +236,52 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 	}, nil
 }
 
+func (h *TODOHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	//リクエストボディを解析し、DeleteTODORequest構造体にデコードする。
+	var req model.DeleteTODORequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding DeleteTODORequest : %v", err)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	//IDsが空かどうかを確認
+	if len(req.IDs) == 0 {
+		http.Error(w, "IDs are required", http.StatusBadRequest)
+		return
+	}
+
+	//コンテキストを取得し、削除処理を呼び出す
+	ctx := r.Context()
+	res, err := h.Delete(ctx, &req) //正しく2つの戻り値を処理
+	if err != nil {
+		if _, ok := err.(*model.ErrNotFound); ok {
+			http.Error(w, "TODO not found", http.StatusNotFound)
+			return
+		}
+
+		log.Printf("Error deleting TODORequest: %v", err)
+		http.Error(w, "Failed to delete TODO", http.StatusInternalServerError)
+		return
+	}
+
+	//レスポンスヘッダを設定し、成功ステータス（200 OK）を返す
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(res); err != nil { //resをエンコード
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+
+}
+
 // Delete handles the endpoint that deletes the TODOs.
+// TODOServiceのDeleteTODOメソッドを呼び出し、TODOを削除
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
+	if err := h.svc.DeleteTODO(ctx, req.IDs); err != nil {
+		return nil, err
+	}
 	return &model.DeleteTODOResponse{}, nil
 }

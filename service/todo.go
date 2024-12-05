@@ -139,32 +139,46 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 
 // DeleteTODO deletes TODOs on DB by ids.
 func (s *TODOService) DeleteTODO(ctx context.Context, ids []int64) error {
+	//DELETE文のフォーマット文字列
+	//プレースホルダ―は後で埋め込む
 	const deleteFmt = `DELETE FROM todos WHERE id IN (%s)`
+
+	//削除対象のIDリストが空の場合は、何もせずに終了
 	if len(ids) == 0 {
 		return nil
 	}
 
-	Formats := strings.Repeat("?,", len(ids))
-	Formats = Formats[:len(Formats)-1]
-	query := fmt.Sprintf(deleteFmt, Formats)
+	//"?,?,?"の形式のプレースホルダ―文字列を作成
+	Formats := strings.Repeat("?,", len(ids)) //IDの数だけ"?,"
+	Formats = Formats[:len(Formats)-1]        //最後のカンマを削除
+	query := fmt.Sprintf(deleteFmt, Formats)  //フォーマット文字列に埋め込む
+
+	//ids([]int64)を[]interface{}に変換する
+	//ExecContextは引数に[]interface{}型を必要とするため
 
 	inter := make([]interface{}, len(ids))
 	for i, id := range ids {
 		inter[i] = id
 	}
 
+	//DELETEクエリを実行
 	result, err := s.db.ExecContext(ctx, query, inter...)
 	if err != nil {
+		//クエリ実行中にエラーが発生した場合
 		return err
 	}
+	//削除された行数を取得
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		//行数取得中にエラーが発生した場合
 		return err
 	}
 
+	//削除対象が見るからなかった場合は、ErrNotFoundを返す
 	if rowsAffected == 0 {
 		return &model.ErrNotFound{Resource: "TODO"}
 	}
 
+	//正常終了
 	return nil
 }
