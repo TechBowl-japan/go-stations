@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -49,6 +50,9 @@ func realMain() error {
 
 	// NOTE: 新しいエンドポイントの登録はrouter.NewRouterの内部で行うようにする
 	mux := router.NewRouter(todoDB)
+
+	log.Println("Server running at http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", mux))
 
 	// TODO: サーバーをlistenする
 

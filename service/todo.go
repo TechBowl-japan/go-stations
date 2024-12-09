@@ -23,10 +23,35 @@ func NewTODOService(db *sql.DB) *TODOService {
 func (s *TODOService) CreateTODO(ctx context.Context, subject, description string) (*model.TODO, error) {
 	const (
 		insert  = `INSERT INTO todos(subject, description) VALUES(?, ?)`
-		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
+		confirm = `SELECT id,subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
 
-	return nil, nil
+	//PrepareContextを使ってSQLステートメントの実行準備を行う
+	stmt, err := s.db.PrepareContext(ctx, insert)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	//インサートしてあげなければいけない。ExecContext メソッドを使う
+	result, err := stmt.ExecContext(ctx, subject, description)
+	if err != nil {
+		return nil, err
+	}
+
+	//リーザルからidを取得する。
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	//取得した情報をQueryRowContext メソッドを使って、返してあげる
+	var todo model.TODO
+	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &todo, nil
 }
 
 // ReadTODO reads TODOs on DB.
