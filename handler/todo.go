@@ -15,44 +15,46 @@ type TODOHandler struct {
 	svc *service.TODOService
 }
 
-// ServeHTTP handles HTTP requests to the /todos endpoint.
-func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-
-		//CreateTODORequestにJSON decodeを行う
-		req := model.CreateTODORequest{}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "BadRequest", 400)
-			log.Println(err)
-			return
-		}
-
-		// subjextが空文字列の場合の判定
-		if req.Subject == "" {
-			http.Error(w, "BadRequest", 400)
-			return
-		}
-
-		// 空文字列でない場合の動作
-		todo, err := h.svc.CreateTODO(r.Context(), req.Subject, req.Description)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		// CreateTODOResponeseをJSON Encodeし、HTTPレスポンス返信
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(model.CreateTODOResponse{TODO: *todo}); err != nil {
-			log.Println(err)
-			return
-		}
-	}
-}
-
 // NewTODOHandler returns TODOHandler based http.Handler.
 func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 	return &TODOHandler{
 		svc: svc,
+	}
+}
+
+// ServeHTTP handles HTTP requests to the /todos endpoint.
+func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	//CreateTODORequestにJSON decodeを行う
+	req := model.CreateTODORequest{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "BadRequest", http.StatusMethodNotAllowed)
+		//log.Println(err)
+		return
+	}
+
+	// subjectが空文字列の場合の判定
+	if req.Subject == "" {
+		http.Error(w, "BadRequest", http.StatusBadRequest)
+		return
+	}
+
+	// 空文字列でない場合の動作
+	todo, err := h.svc.CreateTODO(r.Context(), req.Subject, req.Description)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// CreateTODOResponeseをJSON Encodeし、HTTPレスポンス返信
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(model.CreateTODOResponse{TODO: *todo}); err != nil {
+		log.Println(err)
+		return
 	}
 }
 
