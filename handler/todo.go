@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -24,37 +25,62 @@ func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 
 // ServeHTTP handles HTTP requests to the /todos endpoint.
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	switch r.Method {
+	case http.MethodPost:
+		// 既存の POST 処理
+		req := model.CreateTODORequest{}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "BadRequest", http.StatusBadRequest)
+			return
+		}
 
-	//CreateTODORequestにJSON decodeを行う
-	req := model.CreateTODORequest{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "BadRequest", http.StatusMethodNotAllowed)
-		//log.Println(err)
-		return
-	}
+		if req.Subject == "" {
+			http.Error(w, "BadRequest", http.StatusBadRequest)
+			return
+		}
 
-	// subjectが空文字列の場合の判定
-	if req.Subject == "" {
-		http.Error(w, "BadRequest", http.StatusBadRequest)
-		return
-	}
+		todo, err := h.svc.CreateTODO(r.Context(), req.Subject, req.Description)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
-	// 空文字列でない場合の動作
-	todo, err := h.svc.CreateTODO(r.Context(), req.Subject, req.Description)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(model.CreateTODOResponse{TODO: *todo}); err != nil {
+			log.Println(err)
+			return
+		}
 
-	// CreateTODOResponeseをJSON Encodeし、HTTPレスポンス返信
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(model.CreateTODOResponse{TODO: *todo}); err != nil {
-		log.Println(err)
-		return
+	case http.MethodPut:
+		// PUT 処理を追加
+		//UpdateTODORequestにJSON Decodeを行う
+		req := model.UpdateTODORequest{}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "BadRequest", http.StatusBadRequest)
+			return
+		}
+
+		//idが0の場合に400 BadRequestを返す処理
+		if req.ID == 0 || req.Subject == "" {
+			http.Error(w, "BadRequest", http.StatusBadRequest)
+			return
+		}
+
+		//DBにあるTODOに変更を行い、対象がない場合はHTTP Responseを返す
+		updatedTODO, err := h.svc.UpdateTODO(r.Context(), req.ID, req.Subject, req.Description)
+		if err != nil {
+			if errors.Is(err, &model.ErrNotFound{}) {
+				http.Error(w, "", http.StatusNotFound)
+				return
+			}
+		}
+
+		//更新完了時、更新したTODOをUpdateTODOResponse に代入し、JSON Encodeを行ってHTTP Responsを返す
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(model.UpdateTODOResponse{TODO: *updatedTODO}); err != nil {
+			log.Println(err)
+			return
+		}
 	}
 }
 
