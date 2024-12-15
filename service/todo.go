@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -68,10 +69,42 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, description string) (*model.TODO, error) {
 	const (
 		update  = `UPDATE todos SET subject = ?, description = ? WHERE id = ?`
-		confirm = `SELECT subject, description, created_at, updated_at FROM todos WHERE id = ?`
+		confirm = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id = ?`
 	)
 
-	return nil, nil
+	//SQLステートメントの実行準備
+	stmt, err := s.db.PrepareContext(ctx, update)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	//SQL実行
+	result, err := stmt.ExecContext(ctx, id, subject, description)
+	if err != nil {
+		return nil, err
+	}
+
+	//行数判定
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if rowsAffected == 0 {
+		return nil, model.ErrNotFound{}
+	}
+
+	//保存するTODOを読み取り
+	var todo model.TODO
+	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, model.ErrNotFound{}
+		}
+		return nil, err
+	}
+
+	return &todo, nil
 }
 
 // DeleteTODO deletes TODOs on DB by ids.
