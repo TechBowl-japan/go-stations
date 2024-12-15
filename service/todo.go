@@ -80,7 +80,7 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 	defer stmt.Close()
 
 	//SQL実行
-	result, err := stmt.ExecContext(ctx, id, subject, description)
+	result, err := stmt.ExecContext(ctx, subject, description, id)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 		return nil, err
 	}
 	if rowsAffected == 0 {
-		return nil, model.ErrNotFound{}
+		return nil, &model.ErrNotFound{}
 	}
 
 	//保存するTODOを読み取り
@@ -99,7 +99,7 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 	err = s.db.QueryRowContext(ctx, confirm, id).Scan(&todo.ID, &todo.Subject, &todo.Description, &todo.CreatedAt, &todo.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, model.ErrNotFound{}
+			return nil, &model.ErrNotFound{}
 		}
 		return nil, err
 	}

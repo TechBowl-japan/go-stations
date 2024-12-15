@@ -1,9 +1,9 @@
 package model
 
 type ErrNotFound struct {
-	Massage string
+	Message string
 }
 
 func (e ErrNotFound) Error() string {
-	return e.Massage
+	return e.Message
 }
