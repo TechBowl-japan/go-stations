@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -136,7 +138,46 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 
 // DeleteTODO deletes TODOs on DB by ids.
 func (s *TODOService) DeleteTODO(ctx context.Context, ids []int64) error {
-	const deleteFmt = `DELETE FROM todos WHERE id IN (?%s)`
+	//fmt.Sprintf関数と strings.Repeat関数を組み合わせてクエリに?の処理を追加
+	add_ids := strings.Repeat("?,", len(ids))
+	add_ids = add_ids[:len(add_ids)-1]
+	const deleteFmt = `DELETE FROM todos WHERE id IN (%s)`
+	query := fmt.Sprintf(deleteFmt, add_ids)
+
+	//[]interface{}にidsを詰め直して、繰り返し処理で引数で展開してargsに受け渡す
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+
+	//クエリを実行準備
+	stmt, err := s.db.PrepareContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	//クエリを実行
+	result, err := stmt.ExecContext(ctx, args...)
+	if err != nil {
+		return err
+	}
+
+	//リーザルから削除されたTODOを取得
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	//削除されたTODOが0であった場合ErrNotFoundを返す
+	if rows == 0 {
+		return &model.ErrNotFound{}
+	}
+
+	//idsがからのスライスの場合、なんも処理しないでnilを返す
+	if len(ids) == 0 {
+		return nil
+	}
 
 	return nil
 }
