@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -56,14 +55,40 @@ func realMain() error {
 	mux := router.NewRouter(todoDB)
 
 	// TODO: サーバーをlistenする
-	// log.Printf("Starting server on port%s\n", port)
-	// return http.ListenAndServe(port, mux)
+	//サーバーを非同期で起動
 	log.Printf("Starting server on port %s\n", port)
-	err = http.ListenAndServe(port, mux)
-	if err != nil {
-		log.Printf("Failed to start server on port %s: %v\n", port, err)
-		return fmt.Errorf("server failed to start on %s: %w", port, err)
-
+	//ListenAndServe(ネットワークアドレス,ハンドラ)はHTTPサーバーを起動
+	if err := http.ListenAndServe(port, mux); err != nil {
+		log.Printf("Server stopped unexpectedly: %v\n", err)
 	}
+
+	// // サーバー完全起動後に /do-panic に自動リクエストを送信
+	// time.Sleep(1 * time.Second) // サーバー起動待機
+	// _, err = http.Get("http://localhost" + port + "/do-panic")
+	// if err != nil {
+	// 	log.Printf("Failed to send request to /do-panic: %v\n", err)
+	// }
+
+	// // return nil
+
+	// time.Sleep(1 * time.Second) // サーバーが起動するのを待つ
+	// resp, err := http.Get("http://localhost" + port + "/os-info")
+	// if err != nil {
+	// 	log.Printf("Failed to send request to /os-info: %v\n", err)
+	// 	return err
+	// }
+	// //接続が開いたままだとリソースリーク（メモリやネットワーク接続の浪費）を引き起こすため、defer()で確実に解放する
+	// defer resp.Body.Close()
+
+	// log.Printf("Response from /os-info: %v\n", resp.Status)
 	return nil
+
+	// 	log.Printf("Starting server on port %s\n", port)
+	// 	err = http.ListenAndServe(port, mux)
+	// 	if err != nil {
+	// 		log.Printf("Failed to start server on port %s: %v\n", port, err)
+	// 		return fmt.Errorf("server failed to start on %s: %w", port, err)
+
+	// 	}
+	// 	return nil
 }
