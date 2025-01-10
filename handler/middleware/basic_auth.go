@@ -6,9 +6,14 @@ import (
 	"os"
 )
 
+var (
+	requiredID       = os.Getenv("BASIC_AUTH_USER_ID")
+	requiredPassword = os.Getenv("BASIC_AUTH_PASSWORD")
+)
+
 func checkAuth(r *http.Request) bool {
-	requiredID := os.Getenv("BASIC_AUTH_USER_ID")
-	requiredPassword := os.Getenv("BASIC_AUTH_PASSWORD")
+	// requiredID := os.Getenv("BASIC_AUTH_USER_ID")
+	// requiredPassword := os.Getenv("BASIC_AUTH_PASSWORD")
 
 	log.Printf("Environment BASIC_AUTH_USER_ID: %s", requiredID)
 	log.Printf("Environment BASIC_AUTH_PASSWORD: %s", requiredPassword)

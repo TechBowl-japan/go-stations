@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -21,6 +22,7 @@ func NewHealthzHandler() *HealthzHandler {
 // ServeHTTP implements http.Handler interface.
 // ServeHTTPはhttp.Handlerインターフェースを実装します。
 func (h *HealthzHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	time.Sleep(5 * time.Second)
 	//ヘッダーを設定して、レスポンス形式をJSONと通知する
 	w.Header().Set("Content Type", "application/json")
 	//JSONで返す内容を準備する

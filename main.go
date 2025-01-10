@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	// errors パッケージをインポート
@@ -53,14 +57,52 @@ func realMain() error {
 
 	// NOTE: 新しいエンドポイントの登録はrouter.NewRouterの内部で行うようにする
 	mux := router.NewRouter(todoDB)
-
-	// TODO: サーバーをlistenする
-	//サーバーを非同期で起動
-	log.Printf("Starting server on port %s\n", port)
-	//ListenAndServe(ネットワークアドレス,ハンドラ)はHTTPサーバーを起動
-	if err := http.ListenAndServe(port, mux); err != nil {
-		log.Printf("Server stopped unexpectedly: %v\n", err)
+	//HTTPサーバーの設定
+	server := &http.Server{
+		Addr:         port,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
+
+	//シグナル通知コンテキストの作成
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt, os.Kill)
+	defer stop()
+
+	//複数のゴルーチンの終了待機
+	wg := &sync.WaitGroup{}
+	//サーバーを非同期で起動
+	//起動したサーバーのゴルーチンを追跡
+	wg.Add(1)
+	go func() {
+		//ゴルーチンが終了したことを通知
+		// defer wg.Done()
+		defer func() {
+			wg.Done()
+			log.Printf("WaitGroup Done")
+		}()
+		log.Printf("Starting server on port %s\n", port)
+		//ListenAndServe(ネットワークアドレス,ハンドラ)はHTTPサーバーを起動
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("Server stopped unexpectedly: %v\n", err)
+		}
+	}()
+
+	//シグナルが送信されるまで待機、受信後解除
+	<-ctx.Done()
+	log.Println("Signal received. Shutting down gracefully...")
+
+	//サーバーのシャットダウン処理
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server shutdown err : %v\n", err)
+	}
+
+	//WaitGroupの待機（サーバー処理とゴルーチン終了まで待機）
+	wg.Wait()
+	log.Println("Server shutdown complete.")
 
 	// // サーバー完全起動後に /do-panic に自動リクエストを送信
 	// time.Sleep(1 * time.Second) // サーバー起動待機
