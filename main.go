@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"log"
 	"os"
 	"time"
@@ -39,7 +40,6 @@ func realMain() error {
 	if err != nil {
 		return err
 	}
-
 	// set up sqlite3
 	todoDB, err := db.NewDB(dbPath)
 	if err != nil {
@@ -51,6 +51,9 @@ func realMain() error {
 	mux := router.NewRouter(todoDB)
 
 	// TODO: サーバーをlistenする
-
+	if err := http.ListenAndServe(port, mux); err != nil {
+		log.Println("Failed to start server:", err)
+		return err
+	}
 	return nil
 }
