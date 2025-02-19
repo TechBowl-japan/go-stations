@@ -28,7 +28,7 @@ func Recovery(h http.HandlerFunc) http.Handler {
 
 type contextKey string
 
-// osのcontext　keyを設定
+// osのcontext keyを設定
 const (
 	osKey contextKey = "os"
 )
@@ -39,13 +39,13 @@ func UserOs(h http.HandlerFunc) http.Handler {
 		requestTime := time.Now()
 		log.Println(requestTime)
 
-		//useragentからOS名を取得
-		uaString := useragent.Parse(r.UserAgent())
-		//ua := uaString.OS()
+		//UserAgent使ってHTTPリクエストから情報を分析(OS情報を取得するため)
+		uaString := r.UserAgent()
+		ua := useragent.Parse(uaString)
 
 		//contextにOSとリクエスト時間を格納
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "os", uaString.OS)
+		ctx = context.WithValue(ctx, "os", ua.OS)
 		r = r.WithContext(ctx)
 
 		//Handler処理
@@ -54,7 +54,8 @@ func UserOs(h http.HandlerFunc) http.Handler {
 		//処理時間(ミリ単位)
 		latency := time.Since(requestTime).Milliseconds()
 
-		osInformation, ok := r.Context().Value(osKey).(string)
+		//取得したOS情報の型変換を行い、かつ取得できなかったときの判定処理
+		osInformation, ok := ctx.Value("os").(string)
 		if !ok {
 			osInformation = "OS不明"
 		}
