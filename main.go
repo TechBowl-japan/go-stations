@@ -62,6 +62,16 @@ func realMain() error {
 	mux := router.NewRouter(todoDB)
 	securedMux := middleware.BasicAuth(mux)
 
+	// 長時間処理のエンドポイントを追加
+	var wg sync.WaitGroup
+	mux.HandleFunc("/long-task", func(w http.ResponseWriter, r *http.Request) {
+		wg.Add(1)
+		defer wg.Done()
+		log.Println("長時間の処理を開始 (10秒)")
+		time.Sleep(10 * time.Second)
+		w.Write([]byte("長い処理が完了しました"))
+	})
+
 	// Graceful Shutdown のための `http.Server`
 	server := &http.Server{
 		Addr:    port,
@@ -71,9 +81,6 @@ func realMain() error {
 	// シグナルを受け取るためのコンテキスト
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
-	// リクエストの処理が完了するまで待つための WaitGroup
-	var wg sync.WaitGroup
 
 	// サーバーを非同期で起動
 	go func() {
@@ -87,8 +94,8 @@ func realMain() error {
 	<-ctx.Done()
 	log.Println("シグナル受信! サーバーのシャットダウンを開始...")
 
-	// Graceful Shutdown のためのタイムアウト付きコンテキスト
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// Graceful Shutdown のためのタイムアウト付きコンテキスト (1秒)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	// HTTP サーバーのシャットダウン
