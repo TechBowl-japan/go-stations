@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -24,6 +25,44 @@ func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case http.MethodGet:
+		var readReq model.ReadTODORequest
+		const defaultPrevIDStr = "0"
+		const defaultSizeStr = "5"
+		prevIDStr := r.URL.Query().Get("prev_id")
+		if prevIDStr == "" {
+			prevIDStr = defaultPrevIDStr
+		}
+		sizeStr := r.URL.Query().Get("size")
+		if sizeStr == "" {
+			sizeStr = defaultSizeStr
+		}
+
+		if prevID, err := strconv.Atoi(prevIDStr); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		} else {
+			readReq.PrevID = int64(prevID)
+		}
+
+		if size, err := strconv.ParseInt(sizeStr, 10, 64); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		} else {
+			readReq.Size = int64(size)
+		}
+
+		readResponse, err := h.Read(r.Context(), &readReq)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(readResponse); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	case http.MethodPost:
 		var createReq model.CreateTODORequest
 
@@ -78,6 +117,35 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+	case http.MethodDelete:
+		var deleteReq model.DeleteTODORequest
+		if err := json.NewDecoder(r.Body).Decode(&deleteReq); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		if len(deleteReq.IDs) == 0 {
+			http.Error(w, "ids is empty", http.StatusBadRequest)
+			return
+		}
+		todoResponse, err := h.Delete(r.Context(), &deleteReq)
+		if err != nil {
+			// idが存在しない場合は404を返却
+			var notFoundErr *model.ErrNotFound
+			if errors.As(err, &notFoundErr) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(todoResponse); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -93,8 +161,11 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
-	_, _ = h.svc.ReadTODO(ctx, 0, 0)
-	return &model.ReadTODOResponse{}, nil
+	todos, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+	if err != nil {
+		return nil, err
+	}
+	return &model.ReadTODOResponse{TODOs: todos}, nil
 }
 
 // Update handles the endpoint that updates the TODO.
@@ -108,6 +179,9 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 
 // Delete handles the endpoint that deletes the TODOs.
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
+	err := h.svc.DeleteTODO(ctx, req.IDs)
+	if err != nil {
+		return nil, err
+	}
 	return &model.DeleteTODOResponse{}, nil
 }
