@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/TechBowl-japan/go-stations/db"
+	"github.com/TechBowl-japan/go-stations/handler/middleware"
 	"github.com/TechBowl-japan/go-stations/handler/router"
 )
 
@@ -50,10 +51,18 @@ func realMain() error {
 
 	// NOTE: 新しいエンドポイントの登録はrouter.NewRouterの内部で行うようにする
 	mux := router.NewRouter(todoDB)
-	// TODO: サーバーをlistenする
+	mux.Handle("/do-panic", &PanicHandler{})
+	mux.Handle("/do-panic2", middleware.Recovery(&PanicHandler{}))
 	if err := http.ListenAndServe(port, mux); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// PanicHandler is a test handler that always panics.
+type PanicHandler struct{}
+
+func (p *PanicHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	panic("panic test")
 }
