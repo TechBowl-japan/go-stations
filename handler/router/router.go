@@ -21,6 +21,7 @@ func NewRouter(todoDB *sql.DB) *http.ServeMux {
 
 	// Register TODO Endpoint
 	mux.Handle("/todos", todoHandler)
+	mux.Handle("/todos/", todoHandler)
 
 	return mux
 }

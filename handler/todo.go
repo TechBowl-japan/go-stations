@@ -3,8 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -24,9 +27,11 @@ func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 
 // ServeHTTP handles the HTTP request and dispatches to appropriate methods.
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
+	switch {
+	case r.Method == http.MethodPost:
 		h.handleCreate(w, r)
+	case r.Method == http.MethodPatch:
+		h.HandleUpdate(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -77,10 +82,65 @@ func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*mo
 	return &model.ReadTODOResponse{}, nil
 }
 
-// Update handles the endpoint that updates the TODO.
-func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) (*model.UpdateTODOResponse, error) {
-	_, _ = h.svc.UpdateTODO(ctx, 0, "", "")
-	return &model.UpdateTODOResponse{}, nil
+// handleUpdate handles PATCH/PUT requests to update an existing TODO.
+func (h *TODOHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	// Accept PATCH or PUT
+	if r.Method != http.MethodPatch && r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract id from path: /todos/{id}
+	idStr := strings.TrimPrefix(r.URL.Path, "/todos/")
+	if idStr == "" || idStr == r.URL.Path {
+		http.Error(w, "id is required in path (/todos/{id})", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "id must be a positive integer", http.StatusBadRequest)
+		return
+	}
+
+	// Decode request body
+	var req model.UpdateTODORequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Println("Failed to decode request:", err)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Validate subject (required)
+	if strings.TrimSpace(req.Subject) == "" {
+		http.Error(w, "Subject is required", http.StatusBadRequest)
+		return
+	}
+
+	// Call service
+	ctx := r.Context()
+	todo, err := h.svc.UpdateTODO(ctx, id, req.Subject, req.Description)
+	if err != nil {
+		var nf *model.ErrNotFound
+		if errors.As(err, &nf) {
+			http.Error(w, nf.Error(), http.StatusNotFound)
+			return
+		}
+		log.Println("Failed to update TODO:", err)
+		http.Error(w, "Failed to update TODO", http.StatusInternalServerError)
+		return
+	}
+
+	// Build response
+	resp := model.UpdateTODOResponse{
+		TODO: *todo,
+	}
+
+	// Encode response
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Println("Failed to encode response:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 // Delete handles the endpoint that deletes the TODOs.

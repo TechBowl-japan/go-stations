@@ -11,6 +11,5 @@ type ErrNotFound struct {
 // Error implements the error interface for ErrNotFound.
 // This provides a descriptive error message.
 func (e *ErrNotFound) Error() string {
-	return fmt.Sprintf("%s with ID %d not found",
-		e.Resource, e.ID)
+	return fmt.Sprintf("%s with ID %d not found", e.Resource, e.ID)
 }

@@ -1,0 +1,19 @@
+?   	github.com/TechBowl-japan/go-stations	[no test files]
+?   	github.com/TechBowl-japan/go-stations/handler	[no test files]
+?   	github.com/TechBowl-japan/go-stations/handler/router	[no test files]
+?   	github.com/TechBowl-japan/go-stations/model	[no test files]
+?   	github.com/TechBowl-japan/go-stations/service	[no test files]
+=== RUN   TestNewDB
+=== PAUSE TestNewDB
+=== CONT  TestNewDB
+=== RUN   TestNewDB/Normal
+=== PAUSE TestNewDB/Normal
+=== RUN   TestNewDB/Directory_not_created
+=== PAUSE TestNewDB/Directory_not_created
+=== CONT  TestNewDB/Normal
+=== CONT  TestNewDB/Directory_not_created
+--- PASS: TestNewDB (0.00s)
+    --- PASS: TestNewDB/Directory_not_created (0.00s)
+    --- PASS: TestNewDB/Normal (0.00s)
+PASS
+ok  	github.com/TechBowl-japan/go-stations/db	0.280s
