@@ -85,10 +85,11 @@ func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*mo
 // handleUpdate handles PATCH/PUT requests to update an existing TODO.
 func (h *TODOHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	// Accept PATCH or PUT
-	if r.Method != http.MethodPatch && r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodPatch && r.Method != http.MethodPut {
+        w.Header().Set("Allow", "PATCH, PUT")
+        http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
 
 	// Extract id from path: /todos/{id}
 	idStr := strings.TrimPrefix(r.URL.Path, "/todos/")
@@ -107,12 +108,6 @@ func (h *TODOHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Println("Failed to decode request:", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	// Validate subject (required)
-	if strings.TrimSpace(req.Subject) == "" {
-		http.Error(w, "Subject is required", http.StatusBadRequest)
 		return
 	}
 

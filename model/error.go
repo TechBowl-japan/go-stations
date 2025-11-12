@@ -5,7 +5,7 @@ import "fmt"
 // ErrNotFound is an error struct for representing a "not found" error.
 type ErrNotFound struct {
 	Resource string
-	ID int
+	ID int64
 }
 
 // Error implements the error interface for ErrNotFound.

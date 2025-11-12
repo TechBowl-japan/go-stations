@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -64,63 +63,40 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 
 // UpdateTODO updates the TODO on DB.
 func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, description string) (*model.TODO, error) {
-	const (
-		updateBoth = `UPDATE todos SET subject = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-		updateOnly = `UPDATE todos SET subject = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-		confirm    = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id = ?`
-	)
+    const (
+        update  = `UPDATE todos SET subject = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+        confirm = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id = ?`
+    )
 
-	// idバリデーション
-	if id == 0 {
-		return nil, &model.ErrNotFound{Resource: "todo", ID: int(id)}
-	}
-
-	// subjectバリデーション
-	subject = strings.TrimSpace(subject)
-	if subject == "" {
-		return nil, fmt.Errorf("subject is required")
-	}
-
-	// 更新クエリの選択
-	var (
-		query string
-		args  []interface{}
-	)
-	if strings.TrimSpace(description) == "" {
-		query = updateOnly
-		args = []interface{}{subject, id}
-	} else {
-		query = updateBoth
-		args = []interface{}{subject, description, id}
-	}
-
-	// 更新実行
-	result, err := s.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update todo: %w", err)
-	}
-
-	// 更新件数チェック
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get affected rows: %w", err)
-	}
-	if rows == 0 {
-		return nil, &model.ErrNotFound{Resource: "todo", ID: int(id)}
-	}
-
-	// 更新後データを再取得
-	var t model.TODO
-	if err := s.db.QueryRowContext(ctx, confirm, id).Scan(
-    	&t.ID, &t.Subject, &t.Description, &t.CreatedAt, &t.UpdatedAt,
-	); err != nil {
-    	if errors.Is(err, sql.ErrNoRows) {
-        	return nil, &model.ErrNotFound{Resource: "todo", ID: int(id)}
+    if id == 0 {
+        return nil, &model.ErrNotFound{Resource: "todo", ID: id}
     }
-    return nil, fmt.Errorf("failed to confirm updated todo: %w", err)
-}
 
-	return &t, nil
+    // ★ ここでの空チェックや Trim はしない（subject="" は DB 制約に委ねる）
+    res, err := s.db.ExecContext(ctx, update, subject, description, id)
+    if err != nil {
+        // ★ ラップしないでそのまま返す（sqlite3.Error 型が維持され、テスト期待と一致）
+        return nil, err
+    }
+
+    n, err := res.RowsAffected()
+    if err != nil {
+        return nil, fmt.Errorf("failed to get affected rows: %w", err)
+    }
+    if n == 0 {
+        return nil, &model.ErrNotFound{Resource: "todo", ID: id}
+    }
+
+    var t model.TODO
+    if err := s.db.QueryRowContext(ctx, confirm, id).Scan(
+        &t.ID, &t.Subject, &t.Description, &t.CreatedAt, &t.UpdatedAt,
+    ); err != nil {
+        if errors.Is(err, sql.ErrNoRows) {
+            return nil, &model.ErrNotFound{Resource: "todo", ID: id}
+        }
+        return nil, fmt.Errorf("failed to confirm updated todo: %w", err)
+    }
+    return &t, nil
 }
 
 // DeleteTODO deletes TODOs on DB by ids.

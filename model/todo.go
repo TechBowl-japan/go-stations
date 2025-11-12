@@ -5,7 +5,7 @@ import "time"
 type (
 	// A TODO expresses a TODO item.
 	TODO struct{
-		ID          int       `json:"id"`          // JSONキーは "id"
+		ID          int64       `json:"id"`          // JSONキーは "id"
 		Subject     string    `json:"subject"`     // JSONキーは "subject"
 		Description string    `json:"description"` // JSONキーは "description"
 		CreatedAt   time.Time `json:"created_at"`  // JSONキーは "created_at"
@@ -29,7 +29,7 @@ type (
 
 	// A UpdateTODORequest expresses the request to update a TODO item.
 	UpdateTODORequest struct{
-		ID          int    `json:"id"`          // 更新対象の TODO ID（必須）
+		ID          int64    `json:"id"`          // 更新対象の TODO ID（必須）
 		Subject     string `json:"subject"`     // 更新後のタイトル（必須）
 		Description string `json:"description"` // 更新後の説明（任意）
 	}
