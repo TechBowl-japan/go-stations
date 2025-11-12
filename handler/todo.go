@@ -30,6 +30,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == http.MethodPost:
 		h.handleCreate(w, r)
+	case r.Method == http.MethodPut:
+		h.handleUpdateByBody(w, r)
 	case r.Method == http.MethodPatch:
 		h.HandleUpdate(w, r)
 	default:
@@ -80,6 +82,47 @@ func (h* TODOHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
 	_, _ = h.svc.ReadTODO(ctx, 0, 0)
 	return &model.ReadTODOResponse{}, nil
+}
+
+// handleUpdateByBody handles PUT /todos with JSON body {id, subject, description}.
+func (h *TODOHandler) handleUpdateByBody(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		w.Header().Set("Allow", "PUT")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req model.UpdateTODORequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Println("failed to decode request:", err)
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Sta13: id が 0、または subject が空文字列なら 400
+	if req.ID == 0 {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(req.Subject) == "" {
+		http.Error(w, "subject is required", http.StatusBadRequest)
+		return
+	}
+
+	todo, err := h.svc.UpdateTODO(r.Context(), req.ID, req.Subject, req.Description)
+	if err != nil {
+		var nf *model.ErrNotFound
+		if errors.As(err, &nf) {
+			http.Error(w, nf.Error(), http.StatusNotFound)
+			return
+		}
+		log.Println("failed to update todo:", err)
+		http.Error(w, "failed to update todo", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(model.UpdateTODOResponse{TODO: *todo})
 }
 
 // handleUpdate handles PATCH/PUT requests to update an existing TODO.
