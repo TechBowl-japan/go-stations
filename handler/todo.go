@@ -30,6 +30,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == http.MethodPost:
 		h.handleCreate(w, r)
+    case r.Method == http.MethodGet:
+        h.handleRead(w, r)
 	case r.Method == http.MethodPut:
 		h.handleUpdateByBody(w, r)
 	case r.Method == http.MethodPatch:
@@ -78,10 +80,64 @@ func (h* TODOHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Read handles the endpoint that reads the TODOs.
-func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
-	_, _ = h.svc.ReadTODO(ctx, 0, 0)
-	return &model.ReadTODOResponse{}, nil
+// Read handles the endpoint that reads the TODOs.(非HTTP版, 使わないのでコメントアウト)
+// func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
+// 	_, _ = h.svc.ReadTODO(ctx, 0, 0)
+// 	return &model.ReadTODOResponse{}, nil
+// }
+
+// handleRead handles GET /todos?prev_id=&size=
+func (h *TODOHandler) handleRead(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	q := r.URL.Query()
+
+	// prev_id
+	var prevID int64
+	if v := q.Get("prev_id"); v != "" {
+		if x, err := strconv.ParseInt(v, 10, 64); err == nil && x >= 0 {
+			prevID = x
+		}
+	}
+
+	// size（0 の場合は“全部”取得したいので大きめに置き換える）
+	var size int64
+	if v := q.Get("size"); v != "" {
+		if x, err := strconv.ParseInt(v, 10, 64); err == nil && x >= 0 {
+			size = x
+		}
+	}
+	effSize := size
+	if effSize == 0 {
+		effSize = 1<<31 - 1 // 十分大きい数（テストでは3件なのでこれで全件返る）
+	}
+
+	todosPtr, err := h.svc.ReadTODO(r.Context(), prevID, effSize)
+	if err != nil {
+		log.Println("failed to read todos:", err)
+		http.Error(w, "failed to read todos", http.StatusInternalServerError)
+		return
+	}
+
+	// model.ReadTODOResponse は []TODO なのでデリファレンスして詰め替える
+	todos := make([]model.TODO, 0, len(todosPtr))
+	for _, t := range todosPtr {
+		if t != nil {
+			todos = append(todos, *t)
+		}
+	}
+
+	resp := model.ReadTODOResponse{TODOs: todos}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Println("failed to encode response:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 // handleUpdateByBody handles PUT /todos with JSON body {id, subject, description}.
