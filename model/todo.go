@@ -23,9 +23,14 @@ type (
 	}
 
 	// A ReadTODORequest expresses ...
-	ReadTODORequest struct{}
+	ReadTODORequest struct{
+		PrevID int64 `json:"prev_id"` // 直前のID（以降を読むためのカーソル）
+    	Size   int64 `json:"size"`    // 取得件数
+	}
 	// A ReadTODOResponse expresses ...
-	ReadTODOResponse struct{}
+	ReadTODOResponse struct{
+		TODOs []TODO `json:"todos"` // 取得したTODOの配列（*TODOでも可）
+	}
 
 	// A UpdateTODORequest expresses the request to update a TODO item.
 	UpdateTODORequest struct{
