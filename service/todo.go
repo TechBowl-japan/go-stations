@@ -56,9 +56,41 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]*mode
 	const (
 		read       = `SELECT id, subject, description, created_at, updated_at FROM todos ORDER BY id DESC LIMIT ?`
 		readWithID = `SELECT id, subject, description, created_at, updated_at FROM todos WHERE id < ? ORDER BY id DESC LIMIT ?`
-	)
+	)	
+	
+	// size==0 は空配列（テスト「Zero read」）を返す
+	if size <= 0 {
+		return []*model.TODO{}, nil
+	}
 
-	return nil, nil
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if prevID > 0 {
+		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
+	} else {
+		rows, err = s.db.QueryContext(ctx, read, size)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to query todos: %w", err)
+	}
+	defer rows.Close()
+
+	todos := make([]*model.TODO, 0)
+	
+	for rows.Next() {
+		t := new(model.TODO)
+		if err := rows.Scan(&t.ID, &t.Subject, &t.Description, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan todo: %w", err)
+		}
+		todos = append(todos, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return todos, nil
 }
 
 // UpdateTODO updates the TODO on DB.
