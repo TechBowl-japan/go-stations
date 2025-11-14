@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/TechBowl-japan/go-stations/model"
 )
@@ -134,6 +135,42 @@ func (s *TODOService) UpdateTODO(ctx context.Context, id int64, subject, descrip
 // DeleteTODO deletes TODOs on DB by ids.
 func (s *TODOService) DeleteTODO(ctx context.Context, ids []int64) error {
 	const deleteFmt = `DELETE FROM todos WHERE id IN (?%s)`
+
+	// ids が空なら何もしないで終了（要件どおり）
+    if len(ids) == 0 {
+        return nil
+    }
+
+    // プレースホルダ生成: "?", "?,?", "?,?,?" ... の部分
+    placeholders := ""
+    if len(ids) > 1 {
+        placeholders = strings.Repeat(",?", len(ids)-1)
+    }
+    query := fmt.Sprintf(deleteFmt, placeholders)
+    // 例: len(ids)=3 → "DELETE FROM todos WHERE id IN (?,?,?)"
+
+    // []int64 → []interface{} に詰め替え（ExecContext に渡すため）
+    args := make([]interface{}, len(ids))
+    for i, id := range ids {
+        args[i] = id
+    }
+
+    // 実行
+    res, err := s.db.ExecContext(ctx, query, args...)
+    if err != nil {
+        // sqlite3.Error の型を保ったまま返しておく
+        return err
+    }
+
+    // 何件削除されたか確認
+    n, err := res.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get affected rows: %w", err)
+    }
+    if n == 0 {
+        // 一件も消せなかった → NotFound 扱い
+        return &model.ErrNotFound{Resource: "todo"}
+    }
 
 	return nil
 }

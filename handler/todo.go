@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -36,6 +35,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleUpdateByBody(w, r)
 	case r.Method == http.MethodPatch:
 		h.HandleUpdate(w, r)
+	case r.Method == http.MethodDelete:
+		h.handleDelete(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -237,8 +238,47 @@ func (h *TODOHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Delete handles the endpoint that deletes the TODOs.
-func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
-	return &model.DeleteTODOResponse{}, nil
+// handleDelete handles DELETE /todos with JSON body {"ids":[...]}.
+func (h *TODOHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		w.Header().Set("Allow", "DELETE")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// JSON Body を Decode: {"ids":[1,2,3]}
+	var req model.DeleteTODORequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Println("failed to decode delete request:", err)
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// id のリストが空なら 400 Bad Request（"Empty Ids" ケース）
+	if len(req.IDs) == 0 {
+		http.Error(w, "ids is required", http.StatusBadRequest)
+		return
+	}
+
+	// Service 呼び出し
+	if err := h.svc.DeleteTODO(r.Context(), req.IDs); err != nil {
+		// Station 19: すべての TODO が存在しなかったとき ErrNotFound → 404
+		var nf *model.ErrNotFound
+		if errors.As(err, &nf) {
+			http.Error(w, nf.Error(), http.StatusNotFound)
+			return
+		}
+
+		log.Println("failed to delete todo:", err)
+		http.Error(w, "failed to delete todo", http.StatusInternalServerError)
+		return
+	}
+
+	// 成功したら DeleteTODOResponse を JSON で返す（中身は {}）
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(model.DeleteTODOResponse{}); err != nil {
+		log.Println("failed to encode delete response:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
+
