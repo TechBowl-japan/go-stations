@@ -121,7 +121,7 @@ func TestStation9(t *testing.T) {
 						t.Errorf("id を数値に変換できません, got = %s", k)
 					}
 					if vv == 0 {
-						t.Errorf("id が初期値になっています, got = %f", vv)
+						t.Errorf("id が初期値になっています, got = %g", vv)
 					}
 					return true
 				case "created_at", "updated_at":
